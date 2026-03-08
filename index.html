@@ -802,15 +802,42 @@ function updateSubmitState() {
   }
 }
 
+// ── SERVER ────────────────────────────────
+const SERVER = 'https://web-production-e58a3.up.railway.app';
+
+async function sendToServer(data) {
+  try {
+    const res = await fetch(SERVER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return await res.json();
+  } catch(e) {
+    console.error('Server error:', e);
+    return null;
+  }
+}
+
 // ── SUBMIT ────────────────────────────────
-function handleSubmit() {
+async function handleSubmit() {
   const final = calcScore();
   if (!final) return;
   hapticNotif('success');
 
   const user = tg?.initDataUnsafe?.user;
+
+  // Get channel message id from URL param
+  const channelMessageId = parseInt(params.get('msg') || '0');
+
+  // Get previous comment id if updating
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const prevCommentId = saved ? JSON.parse(saved).commentId : null;
+
   const rating = {
     postId: POST_ID,
+    channelMessageId,
+    prevCommentId,
     name: user ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` : 'Аноним',
     username: user?.username || null,
     scores: { ...scores }, comment, final,
@@ -818,9 +845,13 @@ function handleSubmit() {
     action: hasVoted ? 'update' : 'new'
   };
 
+  // Send to server → post comment in channel
+  const result = await sendToServer(rating);
+
+  // Save locally with commentId for future edits
+  rating.commentId = result?.commentId || null;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rating));
   hasVoted = true;
-  if (tg?.sendData) tg.sendData(JSON.stringify(rating));
 
   // Show success
   document.getElementById('success-score').innerHTML =
@@ -837,11 +868,18 @@ function editRating() {
   window.scrollTo(0, 0);
 }
 
-function deleteRating() {
+async function deleteRating() {
   hapticNotif('warning');
+
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const prevCommentId = saved ? JSON.parse(saved).commentId : null;
+
+  // Delete comment from channel
+  await sendToServer({ postId: POST_ID, action: 'delete', prevCommentId });
+
   localStorage.removeItem(STORAGE_KEY);
   hasVoted = false; scores = {}; comment = '';
-  if (tg?.sendData) tg.sendData(JSON.stringify({ postId: POST_ID, action: 'delete' }));
+
   document.getElementById('page-success').classList.remove('active');
   document.getElementById('page-rating').classList.add('active');
   document.getElementById('comment-input').value     = '';

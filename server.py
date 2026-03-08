@@ -42,6 +42,16 @@ def format_comment(r):
         lines += ["", f"💬 {comment}"]
     return "\n".join(lines)
 
+def parse_startapp(post_id):
+    """Extract discussion_msg_id from startapp param like 'post_001_2'"""
+    parts = post_id.split("_")
+    if len(parts) >= 3:
+        try:
+            return int(parts[-1])
+        except:
+            pass
+    return None
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
@@ -66,12 +76,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
 
-        action  = data.get("action", "new")
-        msg_id  = data.get("channelMessageId")
-        prev_id = data.get("prevCommentId")
+        action   = data.get("action", "new")
+        post_id  = data.get("postId", "")
+        prev_id  = data.get("prevCommentId")
+        chat_id  = DISCUSSION_ID if DISCUSSION_ID else CHANNEL_ID
 
-        # Post to discussion group (comments), fall back to channel
-        chat_id = DISCUSSION_ID if DISCUSSION_ID else CHANNEL_ID
+        # Extract discussion message id from postId e.g. "post_001_2" → 2
+        discussion_msg_id = parse_startapp(post_id)
+        print(f"action={action} post_id={post_id} discussion_msg_id={discussion_msg_id}")
 
         if action == "delete" and prev_id:
             tg("deleteMessage", {"chat_id": chat_id, "message_id": prev_id})
@@ -87,13 +99,13 @@ class Handler(BaseHTTPRequestHandler):
                 "text": text
             })
         else:
-            res = tg("sendMessage", {
-                "chat_id": chat_id,
-                "text": text,
-                "reply_to_message_id": msg_id
-            })
+            payload = {"chat_id": chat_id, "text": text}
+            if discussion_msg_id:
+                payload["reply_to_message_id"] = discussion_msg_id
+            res = tg("sendMessage", payload)
 
         comment_msg_id = res.get("result", {}).get("message_id") if res else None
+        print(f"Result: comment_id={comment_msg_id}, tg_response={res}")
         self.wfile.write(json.dumps({"ok": True, "commentId": comment_msg_id}).encode())
 
     def do_OPTIONS(self):

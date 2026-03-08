@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>index — оценить дизайн</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  min-height: 100%;
+  background: #fff;
+  font-family: 'Golos Text', -apple-system, sans-serif;
+  color: #1C1C1E;
+}
+
+/* ── PAGES ───────────────────────────────── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── HEADER ──────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 16px;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.header-thumb {
+  width: 56px; height: 56px; border-radius: 14px;
+  overflow: hidden; flex-shrink: 0;
+  background: #EEE;
+}
+
+.header-thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+  display: block;
+}
+
+.header-thumb-placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+}
+
+.header-info { flex: 1; min-width: 0; }
+
+.header-type {
+  font-size: 13px; color: #888; font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.header-name {
+  font-size: 26px; font-weight: 700;
+  color: #1C1C1E; line-height: 1.1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.header-score {
+  text-align: right; flex-shrink: 0;
+}
+
+.header-score-label {
+  font-size: 13px; color: #7B4FFF; font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.header-score-val {
+  font-size: 30px; font-weight: 700; color: #7B4FFF;
+  line-height: 1;
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.header-score-val .denom {
+  font-size: 18px; color: #C8C8CC; font-weight: 700;
+}
+
+.header-score-val.bump { transform: scale(1.15); }
+
+/* ── SCROLL BODY ─────────────────────────── */
+.body {
+  padding: 0 20px calc(90px + env(safe-area-inset-bottom, 20px));
+}
+
+/* ── CRITERIA BLOCK ──────────────────────── */
+.crit-block {
+  padding-top: 28px;
+  padding-bottom: 4px;
+}
+
+.crit-block + .crit-block {
+  border-top: 1px solid #F0F0F0;
+}
+
+.crit-name {
+  font-size: 26px; font-weight: 700;
+  color: #1C1C1E; line-height: 1.15;
+  margin-bottom: 4px;
+}
+
+.crit-tagline {
+  font-size: 14px; color: #888; line-height: 1.45;
+  margin-bottom: 18px;
+}
+
+/* EXPAND DETAIL */
+.crit-expand-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: none; padding: 0;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 13px; color: #7B4FFF; font-weight: 500;
+  cursor: pointer; margin-bottom: 16px;
+}
+
+.crit-expand-btn svg {
+  width: 13px; height: 13px; transition: transform 0.2s;
+}
+
+.crit-expand-btn.open svg { transform: rotate(180deg); }
+
+.crit-detail {
+  overflow: hidden; max-height: 0;
+  transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1);
+  margin-bottom: 0;
+}
+
+.crit-detail.open { max-height: 200px; margin-bottom: 14px; }
+
+.crit-detail-inner {
+  background: #F7F7F8; border-radius: 14px;
+  padding: 13px 16px;
+}
+
+.crit-desc {
+  font-size: 13px; color: #636366; line-height: 1.55; margin-bottom: 8px;
+}
+
+.crit-subs { display: flex; flex-direction: column; gap: 5px; }
+
+.crit-sub {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 13px; color: #636366; line-height: 1.4;
+}
+
+.crit-sub-dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: #A880FF; flex-shrink: 0; margin-top: 6px;
+}
+
+/* SCORE BUTTONS */
+.score-row {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+  margin-bottom: 8px;
+}
+
+.score-btn {
+  height: 52px; border-radius: 14px;
+  border: none;
+  background: #EDE8FF;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 18px; font-weight: 600;
+  color: #7B4FFF;
+  cursor: pointer;
+  transition: all 0.16s cubic-bezier(0.34,1.56,0.64,1);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.score-btn:active { transform: scale(0.91); }
+
+.score-btn.selected {
+  background: #7B4FFF;
+  color: #fff;
+  transform: scale(1.06);
+}
+
+.score-hints {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: #AEAEB2;
+  padding: 0 2px; margin-bottom: 4px;
+}
+
+/* ── COMMENT ─────────────────────────────── */
+.comment-section {
+  padding-top: 24px;
+  border-top: 1px solid #F0F0F0;
+}
+
+.comment-user {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+}
+
+.comment-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #EDE8FF; overflow: hidden; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; color: #7B4FFF;
+}
+
+.comment-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.comment-username {
+  font-size: 15px; font-weight: 600; color: #1C1C1E;
+}
+
+textarea {
+  width: 100%;
+  background: #F2F2F7;
+  border: none; outline: none; border-radius: 14px;
+  padding: 14px 16px;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 15px; line-height: 1.55; color: #1C1C1E;
+  resize: none; min-height: 110px; display: block;
+}
+
+textarea::placeholder { color: #AEAEB2; }
+
+.char-hint {
+  text-align: right; font-size: 12px; color: #AEAEB2; margin-top: 6px;
+}
+
+/* ── SYSTEM LINK ─────────────────────────── */
+.system-link-wrap {
+  padding: 18px 0 0;
+  text-align: center;
+}
+
+.system-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 13px; color: #7B4FFF; font-weight: 500; cursor: pointer;
+}
+
+.system-link svg { width: 12px; height: 12px; opacity: 0.7; }
+
+/* ── ALREADY BANNER ──────────────────────── */
+.already-banner {
+  display: none; align-items: center; gap: 10px;
+  background: #EDE8FF; border-radius: 14px;
+  padding: 12px 16px; margin: 16px 20px 0;
+  font-size: 13px; color: #7B4FFF; font-weight: 500; line-height: 1.5;
+}
+.already-banner.show { display: flex; }
+
+/* ── BOTTOM BAR ──────────────────────────── */
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 20px));
+  background: linear-gradient(to top, #fff 70%, transparent);
+  z-index: 200;
+}
+
+.submit-btn {
+  width: 100%;
+  background: #1C1C1E;
+  color: #fff; border: none;
+  border-radius: 18px;
+  padding: 18px;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 17px; font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.2s;
+}
+
+.submit-btn:active { transform: scale(0.98); }
+.submit-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+
+.bottom-hint {
+  text-align: center; font-size: 12px; color: #AEAEB2; margin-top: 7px;
+}
+
+/* ── SUCCESS PAGE ─────────────────────────── */
+#page-success {
+  display: none;
+  min-height: 100vh;
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 24px calc(40px + env(safe-area-inset-bottom, 20px));
+  background: #fff;
+}
+#page-success.active { display: flex; }
+
+.success-anim {
+  position: relative; width: 88px; height: 88px; margin-bottom: 28px;
+}
+
+.ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 2px solid #7B4FFF; opacity: 0;
+  animation: ringOut 1.5s cubic-bezier(0.2,0.8,0.4,1) forwards;
+}
+.ring:nth-child(1) { animation-delay: 0.05s; }
+.ring:nth-child(2) { animation-delay: 0.28s; }
+.ring:nth-child(3) { animation-delay: 0.50s; }
+
+@keyframes ringOut {
+  0%   { transform: scale(0.3); opacity: 0.85; }
+  100% { transform: scale(3.0); opacity: 0; }
+}
+
+.success-core {
+  position: absolute; inset: 0;
+  background: #7B4FFF; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  animation: corePop 0.48s cubic-bezier(0.34,1.56,0.64,1) 0.05s both;
+}
+
+@keyframes corePop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.success-check {
+  color: white; font-size: 34px; line-height: 1;
+  animation: checkIn 0.3s ease 0.36s both;
+}
+
+@keyframes checkIn {
+  from { transform: scale(0) rotate(-15deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.success-score-num {
+  font-size: 80px; font-weight: 700;
+  color: #7B4FFF; line-height: 1;
+  animation: fadeUp 0.45s cubic-bezier(0.32,0.72,0,1) 0.46s both;
+}
+
+.success-denom {
+  font-size: 28px; color: #C8C8CC; font-weight: 700;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.success-score-sub {
+  font-size: 14px; color: #AEAEB2; margin-top: 4px; margin-bottom: 14px;
+  animation: fadeUp 0.45s cubic-bezier(0.32,0.72,0,1) 0.54s both;
+}
+
+.success-title {
+  font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 10px;
+  animation: fadeUp 0.45s cubic-bezier(0.32,0.72,0,1) 0.60s both;
+}
+
+.success-sub {
+  font-size: 15px; color: #636366; line-height: 1.55;
+  text-align: center; margin-bottom: 36px;
+  animation: fadeUp 0.45s cubic-bezier(0.32,0.72,0,1) 0.66s both;
+}
+
+.success-actions {
+  width: 100%; display: flex; flex-direction: column; gap: 9px;
+  animation: fadeUp 0.45s cubic-bezier(0.32,0.72,0,1) 0.74s both;
+}
+
+.btn-edit {
+  width: 100%; background: #EDE8FF; color: #7B4FFF;
+  border: none; border-radius: 18px; padding: 16px;
+  font-family: 'Golos Text', sans-serif; font-size: 16px; font-weight: 600;
+  cursor: pointer; transition: transform 0.15s;
+}
+.btn-edit:active { transform: scale(0.97); }
+
+.btn-delete {
+  width: 100%; background: #FFF0F0; color: #FF453A;
+  border: none; border-radius: 18px; padding: 15px;
+  font-family: 'Golos Text', sans-serif; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: transform 0.15s;
+}
+.btn-delete:active { transform: scale(0.97); }
+
+.btn-close-plain {
+  width: 100%; background: #F2F2F7; color: #636366;
+  border: none; border-radius: 18px; padding: 15px;
+  font-family: 'Golos Text', sans-serif; font-size: 15px; font-weight: 500;
+  cursor: pointer; transition: transform 0.15s;
+}
+.btn-close-plain:active { transform: scale(0.97); }
+
+/* ── MODAL ────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  z-index: 500; display: flex; align-items: flex-end;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.24s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal-sheet {
+  width: 100%; background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 12px 20px calc(28px + env(safe-area-inset-bottom, 20px));
+  max-height: 80vh; overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.34s cubic-bezier(0.32,0.72,0,1);
+}
+.modal-overlay.open .modal-sheet { transform: translateY(0); }
+
+.modal-handle {
+  width: 36px; height: 4px; border-radius: 100px;
+  background: #DDDDE0; margin: 0 auto 20px;
+}
+
+.modal-title {
+  font-size: 19px; font-weight: 700; margin-bottom: 18px;
+}
+
+.modal-sec-title {
+  font-size: 11px; font-weight: 600; color: #AEAEB2;
+  text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 9px;
+}
+
+.formula-rows {
+  background: #F7F7F8; border-radius: 16px;
+  padding: 4px 16px; margin-bottom: 12px;
+}
+
+.formula-row {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 11px 0; border-bottom: 1px solid #EBEBEB; font-size: 14px;
+}
+.formula-row:last-child { border-bottom: none; }
+.formula-row-label { color: #636366; flex: 1; line-height: 1.4; }
+.formula-row-val { font-weight: 700; color: #1C1C1E; white-space: nowrap; }
+
+.formula-highlight {
+  background: #EDE8FF; border-radius: 14px;
+  padding: 13px 16px; margin-bottom: 20px;
+  font-size: 14px; color: #7B4FFF; font-weight: 600;
+  text-align: center; line-height: 1.55;
+}
+
+.mult-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+
+.mult-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #F7F7F8; border-radius: 12px; padding: 10px 14px; font-size: 14px;
+}
+.mult-score { color: #636366; }
+.mult-val { font-weight: 700; color: #7B4FFF; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     PAGE: RATING
+══════════════════════════════════════════ -->
+<div id="page-rating" class="page active">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-thumb">
+      <div class="header-thumb-placeholder" id="header-emoji">🏦</div>
+    </div>
+    <div class="header-info">
+      <div class="header-type" id="header-type">Сайт</div>
+      <div class="header-name" id="header-name">Сбербанк</div>
+    </div>
+    <div class="header-score">
+      <div class="header-score-label">Оценка</div>
+      <div class="header-score-val" id="live-score">
+        —<span class="denom">/100</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALREADY VOTED -->
+  <div class="already-banner" id="already-banner">
+    <span>✏️</span>
+    <span>Вы уже голосовали. Можно изменить или удалить оценку.</span>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <div id="criteria-list"></div>
+
+    <!-- COMMENT -->
+    <div class="comment-section">
+      <div class="comment-user">
+        <div class="comment-avatar" id="user-avatar">А</div>
+        <div class="comment-username" id="user-name">Аноним</div>
+      </div>
+      <textarea id="comment-input"
+        placeholder="Текст рецензии"
+        maxlength="500" rows="4"
+        oninput="onCommentInput(this)"></textarea>
+      <div class="char-hint" id="char-hint">0 / 500</div>
+    </div>
+
+    <!-- SYSTEM LINK -->
+    <div class="system-link-wrap">
+      <span class="system-link" onclick="openModal()">
+        Система оценки
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 1h4v4M11 1L6.5 5.5M5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h7a1 1 0 001-1V7"/>
+        </svg>
+      </span>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="bottom-bar">
+    <button class="submit-btn" id="submit-btn" disabled onclick="handleSubmit()">
+      Отправить
+    </button>
+    <div class="bottom-hint" id="bottom-hint">Заполните все критерии</div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     PAGE: SUCCESS
+══════════════════════════════════════════ -->
+<div id="page-success" class="page">
+
+  <div class="success-anim">
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="success-core">
+      <div class="success-check">✓</div>
+    </div>
+  </div>
+
+  <div class="success-score-num" id="success-score">
+    —<span class="success-denom">/100</span>
+  </div>
+  <div class="success-score-sub">Ваша оценка</div>
+
+  <div class="success-title">Оценка опубликована!</div>
+  <div class="success-sub">
+    Ваш голос появился в комментариях<br>под постом в канале <strong>index</strong>
+  </div>
+
+  <div class="success-actions">
+    <button class="btn-edit" onclick="editRating()">Изменить оценку</button>
+    <button class="btn-delete" onclick="deleteRating()">Удалить оценку</button>
+    <button class="btn-close-plain" onclick="closeMiniApp()">Закрыть</button>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     MODAL: SYSTEM INFO
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="system-modal" onclick="maybeCloseModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Система оценки 2.0</div>
+
+    <div class="modal-sec-title">Как считается итог</div>
+    <div class="formula-rows">
+      <div class="formula-row">
+        <span class="formula-row-label">База = К1 (Смысл) + К2 (Удобство) + К3 (Визуал)</span>
+        <span class="formula-row-val">макс. 30</span>
+      </div>
+      <div class="formula-row">
+        <span class="formula-row-label">Если база &lt; 18 — итог равен базе</span>
+        <span class="formula-row-val">без ×</span>
+      </div>
+      <div class="formula-row">
+        <span class="formula-row-label">Если база ≥ 18 и каждый критерий ≥ 4 — включается множитель от Идеи</span>
+        <span class="formula-row-val">+ до 20%</span>
+      </div>
+    </div>
+
+    <div class="formula-highlight">
+      Итог = (База × Коэффициент идеи / 36) × 100
+    </div>
+
+    <div class="modal-sec-title">Множитель «Идея / Атмосфера»</div>
+    <div class="mult-list">
+      <div class="mult-row"><span class="mult-score">1–4 балла</span><span class="mult-val">× 1.00</span></div>
+      <div class="mult-row"><span class="mult-score">5–6 баллов</span><span class="mult-val">× 1.05</span></div>
+      <div class="mult-row"><span class="mult-score">7–8 баллов</span><span class="mult-val">× 1.10</span></div>
+      <div class="mult-row"><span class="mult-score">9 баллов</span><span class="mult-val">× 1.15</span></div>
+      <div class="mult-row"><span class="mult-score">10 баллов</span><span class="mult-val">× 1.20</span></div>
+    </div>
+
+    <div class="modal-sec-title">Общий принцип</div>
+    <div class="formula-rows">
+      <div class="formula-row">
+        <span class="formula-row-label">База — функциональная зрелость. Концепция усиливает систему, но не заменяет её.</span>
+      </div>
+      <div class="formula-row">
+        <span class="formula-row-label">Порог 18 баллов: сначала фундамент, потом характер. Идея не компенсирует слабый фундамент.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+function haptic(t = 'light') { tg?.HapticFeedback?.impactOccurred(t); }
+function hapticNotif(t = 'success') { tg?.HapticFeedback?.notificationOccurred(t); }
+
+// ── CONFIG ────────────────────────────────
+const params  = new URLSearchParams(location.search);
+const POST_ID = params.get('post') || 'demo';
+const SERVICE = {
+  name:    params.get('name')    || 'Сбербанк',
+  type:    params.get('type')    || 'Сайт',
+  release: params.get('release') || '2024',
+  desc:    params.get('desc')    || '',
+  emoji:   params.get('emoji')   || '🏦',
+};
+
+// ── CRITERIA ──────────────────────────────
+const CRITERIA = [
+  {
+    id: 'content', role: 'K1',
+    name: 'Содержание / Смысл',
+    tagline: 'Насколько дизайн помогает продукту выполнять его основную функцию',
+    desc: 'Оцените понятность ценности продукта, поддержку ключевых сценариев и отсутствие решений «ради красоты».',
+    subs: ['Ценность продукта понятна', 'Ключевые сценарии поддержаны', 'Нет решений ради красоты']
+  },
+  {
+    id: 'usability', role: 'K2',
+    name: 'Удобство / Логика',
+    tagline: 'Насколько интерфейс прост, предсказуем и комфортен в использовании',
+    desc: 'Очевидность интерактивных элементов, обратная связь, состояния ошибок, навигация и группировка.',
+    subs: ['Элементы очевидны', 'Навигация понятна', 'Ошибки и состояния ясны']
+  },
+  {
+    id: 'visual', role: 'K3',
+    name: 'Визуал / Красота',
+    tagline: 'Насколько визуальный дизайн помогает ориентироваться',
+    desc: 'Акценты, контраст, ритм, читаемость, единые компоненты и стили, консистентность.',
+    subs: ['Чёткая визуальная иерархия', 'Единые компоненты и стили', 'Контраст, ритм, качество']
+  },
+  {
+    id: 'idea', role: 'Идея',
+    name: 'Идея / Атмосфера',
+    tagline: 'Насколько в продукте есть осмысленная дизайнерская идея',
+    desc: 'Наличие чёткой концепции, влияние идеи на решения, формирование уникального опыта.',
+    subs: ['Есть чёткая концепция', 'Идея влияет на решения', 'Формирует уникальный опыт']
+  }
+];
+
+// ── STATE ─────────────────────────────────
+const STORAGE_KEY = 'vote_' + POST_ID;
+let scores   = {};
+let comment  = '';
+let hasVoted = false;
+
+// ── INIT ──────────────────────────────────
+function init() {
+  document.getElementById('header-emoji').textContent = SERVICE.emoji;
+  document.getElementById('header-name').textContent  = SERVICE.name;
+  document.getElementById('header-type').textContent  = SERVICE.type;
+
+  // Fill user info
+  const user = tg?.initDataUnsafe?.user;
+  if (user) {
+    const name = `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`;
+    document.getElementById('user-name').textContent   = name;
+    document.getElementById('user-avatar').textContent = name[0].toUpperCase();
+  }
+
+  // Load saved vote
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    const r = JSON.parse(saved);
+    scores   = { ...r.scores };
+    comment  = r.comment || '';
+    hasVoted = true;
+    document.getElementById('comment-input').value     = comment;
+    document.getElementById('char-hint').textContent   = comment.length + ' / 500';
+    document.getElementById('already-banner').classList.add('show');
+    document.getElementById('submit-btn').textContent  = 'Обновить оценку';
+  }
+
+  renderCriteria();
+  updateLiveScore();
+  updateSubmitState();
+}
+
+// ── RENDER ────────────────────────────────
+function renderCriteria() {
+  document.getElementById('criteria-list').innerHTML = CRITERIA.map(c => `
+    <div class="crit-block" id="block-${c.id}">
+      <div class="crit-name">${c.name}</div>
+      <div class="crit-tagline">${c.tagline}</div>
+
+      <button class="crit-expand-btn" id="expand-${c.id}" onclick="toggleExpand('${c.id}')">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 4l4 4 4-4"/>
+        </svg>
+        Что оценивается
+      </button>
+
+      <div class="crit-detail" id="detail-${c.id}">
+        <div class="crit-detail-inner">
+          <div class="crit-desc">${c.desc}</div>
+          <div class="crit-subs">
+            ${c.subs.map(s => `
+              <div class="crit-sub">
+                <div class="crit-sub-dot"></div>
+                <span>${s}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="score-row">
+        ${[1,2,3,4,5].map(n => mkBtn(c.id, n)).join('')}
+      </div>
+      <div class="score-row">
+        ${[6,7,8,9,10].map(n => mkBtn(c.id, n)).join('')}
+      </div>
+      <div class="score-hints">
+        <span>1 — критично</span>
+        <span>10 — эталон</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function mkBtn(id, n) {
+  return `<button class="score-btn ${scores[id] === n ? 'selected' : ''}"
+    onclick="selectScore('${id}',${n})">${n}</button>`;
+}
+
+// ── INTERACTIONS ──────────────────────────
+function toggleExpand(id) {
+  document.getElementById('detail-' + id).classList.toggle('open');
+  document.getElementById('expand-' + id).classList.toggle('open');
+}
+
+function selectScore(id, val) {
+  haptic('light');
+  scores[id] = val;
+
+  // Update buttons
+  document.querySelectorAll(`#block-${id} .score-btn`).forEach(btn => {
+    btn.classList.toggle('selected', parseInt(btn.textContent) === val);
+  });
+
+  updateLiveScore();
+  updateSubmitState();
+}
+
+function onCommentInput(el) {
+  comment = el.value;
+  document.getElementById('char-hint').textContent = comment.length + ' / 500';
+}
+
+// ── SCORE CALC ────────────────────────────
+function calcScore() {
+  const k1   = scores['content']   || 0;
+  const k2   = scores['usability'] || 0;
+  const k3   = scores['visual']    || 0;
+  const idea = scores['idea']      || 0;
+  const base = k1 + k2 + k3;
+  if (!base) return null;
+  if (base < 18) return Math.round(base);
+  if (k1 < 4 || k2 < 4 || k3 < 4) return Math.round(base);
+  const coeff = idea >= 10 ? 1.20 : idea >= 9 ? 1.15 : idea >= 7 ? 1.10 : idea >= 5 ? 1.05 : 1.00;
+  return Math.min(100, Math.round((base * coeff / 36) * 100));
+}
+
+function updateLiveScore() {
+  const score = calcScore();
+  const el    = document.getElementById('live-score');
+  const next  = score !== null ? score : '—';
+  el.innerHTML = `${next}<span class="denom">/100</span>`;
+  el.classList.remove('bump');
+  void el.offsetWidth;
+  el.classList.add('bump');
+  setTimeout(() => el.classList.remove('bump'), 320);
+}
+
+function updateSubmitState() {
+  const allFilled = CRITERIA.every(c => scores[c.id]);
+  const btn  = document.getElementById('submit-btn');
+  const hint = document.getElementById('bottom-hint');
+  btn.disabled = !allFilled;
+  if (allFilled) {
+    hint.textContent = hasVoted
+      ? 'Оценка будет обновлена в комментариях'
+      : 'Оценка появится в комментариях под постом';
+  } else {
+    const n = CRITERIA.filter(c => !scores[c.id]).length;
+    hint.textContent = `Ещё ${n} ${n === 1 ? 'критерий' : n < 5 ? 'критерия' : 'критериев'} не заполнено`;
+  }
+}
+
+// ── SUBMIT ────────────────────────────────
+function handleSubmit() {
+  const final = calcScore();
+  if (!final) return;
+  hapticNotif('success');
+
+  const user = tg?.initDataUnsafe?.user;
+  const rating = {
+    postId: POST_ID,
+    name: user ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` : 'Аноним',
+    username: user?.username || null,
+    scores: { ...scores }, comment, final,
+    date: new Date().toISOString(),
+    action: hasVoted ? 'update' : 'new'
+  };
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(rating));
+  hasVoted = true;
+  if (tg?.sendData) tg.sendData(JSON.stringify(rating));
+
+  // Show success
+  document.getElementById('success-score').innerHTML =
+    `${final}<span class="success-denom">/100</span>`;
+  document.getElementById('page-rating').classList.remove('active');
+  document.getElementById('page-success').classList.add('active');
+}
+
+// ── EDIT / DELETE ─────────────────────────
+function editRating() {
+  haptic('medium');
+  document.getElementById('page-success').classList.remove('active');
+  document.getElementById('page-rating').classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function deleteRating() {
+  hapticNotif('warning');
+  localStorage.removeItem(STORAGE_KEY);
+  hasVoted = false; scores = {}; comment = '';
+  if (tg?.sendData) tg.sendData(JSON.stringify({ postId: POST_ID, action: 'delete' }));
+  document.getElementById('page-success').classList.remove('active');
+  document.getElementById('page-rating').classList.add('active');
+  document.getElementById('comment-input').value     = '';
+  document.getElementById('char-hint').textContent   = '0 / 500';
+  document.getElementById('already-banner').classList.remove('show');
+  document.getElementById('submit-btn').textContent  = 'Отправить';
+  document.getElementById('live-score').innerHTML    = '—<span class="denom">/100</span>';
+  renderCriteria();
+  updateSubmitState();
+  window.scrollTo(0, 0);
+}
+
+function closeMiniApp() { if (tg) tg.close(); }
+
+// ── MODAL ─────────────────────────────────
+function openModal() { document.getElementById('system-modal').classList.add('open'); }
+function maybeCloseModal(e) {
+  if (e.target === document.getElementById('system-modal'))
+    document.getElementById('system-modal').classList.remove('open');
+}
+
+init();
+</script>
+</body>
+</html>

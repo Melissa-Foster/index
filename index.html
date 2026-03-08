@@ -612,7 +612,8 @@ function hapticNotif(t = 'success') { tg?.HapticFeedback?.notificationOccurred(t
 
 // ── CONFIG ────────────────────────────────
 const params  = new URLSearchParams(location.search);
-const POST_ID = params.get('post') || 'demo';
+const START_PARAM = tg?.initDataUnsafe?.start_param || params.get('startapp') || 'demo';
+const POST_ID = START_PARAM;
 const SERVICE = {
   name:    params.get('name')    || 'Сбербанк',
   type:    params.get('type')    || 'Сайт',

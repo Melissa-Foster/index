@@ -75,11 +75,11 @@ def format_comment(r):
     mention  = f"@{username}" if username else name
     lines = [
         f"👤 {mention}", "",
-        f"{'⭐️' * round(final/10)} {final}/100", "",
-        f"🎯 Содержание   {score_bar(s.get('content',0))}  {s.get('content','—')}",
-        f"🧭 Удобство       {score_bar(s.get('usability',0))}  {s.get('usability','—')}",
-        f"✦  Визуал           {score_bar(s.get('visual',0))}  {s.get('visual','—')}",
-        f"💡 Идея              {score_bar(s.get('idea',0))}  {s.get('idea','—')}",
+        f"⭐ {final}/100", "",
+        f"Содержание   {score_bar(s.get('content',0))}  {s.get('content','—')}",
+        f"Удобство       {score_bar(s.get('usability',0))}  {s.get('usability','—')}",
+        f"Визуал           {score_bar(s.get('visual',0))}  {s.get('visual','—')}",
+        f"Идея              {score_bar(s.get('idea',0))}  {s.get('idea','—')}",
     ]
     if comment:
         lines += ["", f"💬 {comment}"]

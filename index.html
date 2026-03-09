@@ -718,11 +718,6 @@ async function fetchPostData() {
     if (data.ok) {
       if (data.name)     document.getElementById('header-name').textContent     = data.name;
       if (data.subtitle) document.getElementById('header-subtitle').textContent = data.subtitle;
-      if (data.photo_url) {
-        const thumb = document.getElementById('header-thumb');
-        thumb.innerHTML = `<img src="${data.photo_url}" alt="${data.name || ''}"
-          onerror="this.parentElement.innerHTML='<div class=header-thumb-placeholder>✦</div>'">`;
-      }
     }
   } catch (e) {
     // server unavailable or no data — keep defaults
@@ -737,6 +732,11 @@ window.addEventListener('scroll', () => {
 
 // ── INIT ─────────────────────────────────────────
 function init() {
+  // Set thumbnail from photo proxy (same image as the Telegram post, square-cropped)
+  const thumb = document.getElementById('header-thumb');
+  thumb.innerHTML = `<img src="${SERVER}/photo/${POST_ID}" alt=""
+    onerror="this.parentElement.innerHTML='<div class=header-thumb-placeholder>✦</div>'">`;
+
   fetchPostData();
 
   // Fill user info

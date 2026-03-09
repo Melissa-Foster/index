@@ -67,10 +67,8 @@ def score_bar(val, max_val=10):
     return "●" * filled + "○" * (5 - filled)
 
 def _esc(text):
-    """Escape Markdown v1 special chars in user-provided text."""
-    for ch in ('*', '_', '`', '['):
-        text = str(text).replace(ch, '\\' + ch)
-    return text
+    """Escape HTML special chars in user-provided text."""
+    return str(text).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
 def format_comment(r):
     s        = r.get("scores", {})
@@ -86,6 +84,7 @@ def format_comment(r):
         return f"{label}  {score_bar(val)}  {num}"
 
     # Labels padded to equal width (10 chars) for monospace alignment
+    # <pre> renders in monospace in Telegram HTML mode
     criteria = "\n".join([
         row("Содержание", "content"),
         row("Удобство  ", "usability"),
@@ -95,7 +94,7 @@ def format_comment(r):
     lines = [
         f"👤 {mention}", "",
         f"⭐ {final}/100", "",
-        f"```\n{criteria}\n```",
+        f"<pre>{criteria}</pre>",
     ]
     if comment:
         lines += ["", f"💬 {_esc(comment)}"]
@@ -371,17 +370,17 @@ class Handler(BaseHTTPRequestHandler):
                 "chat_id":    chat_id,
                 "message_id": existing_comment_id,
                 "text":       text,
-                "parse_mode": "Markdown",
+                "parse_mode": "HTML",
             })
         elif action == "update" and prev_id:
             res = tg("editMessageText", {
                 "chat_id":    chat_id,
                 "message_id": prev_id,
                 "text":       text,
-                "parse_mode": "Markdown",
+                "parse_mode": "HTML",
             })
         else:
-            payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
+            payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
             if discussion_thread_id:
                 payload["reply_to_message_id"]         = discussion_thread_id
                 payload["allow_sending_without_reply"] = True

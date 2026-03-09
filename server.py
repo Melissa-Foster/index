@@ -205,6 +205,7 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
         "button_msg_id":  button_msg_id,
         "button_text":    button_text,
         "votes":          {},
+        "comment_ids":    {},  # {username: comment_msg_id}
     }
     save_slug_map(SLUG_MAP)
     print(f"✅ Published post slug={slug} channel_msg_id={photo_msg_id} "
@@ -331,12 +332,15 @@ class Handler(BaseHTTPRequestHandler):
               f"discussion_thread_id={discussion_thread_id} "
               f"SLUG_MAP={SLUG_MAP} POST_MAP={POST_MAP}")
 
-        if action == "delete" and prev_id:
-            tg("deleteMessage", {"chat_id": chat_id, "message_id": prev_id})
-            # Remove this user's vote and update average
-            entry = SLUG_MAP.get(post_id)
-            if isinstance(entry, dict) and username in entry.get("votes", {}):
-                del entry["votes"][username]
+        entry = SLUG_MAP.get(post_id) if isinstance(SLUG_MAP.get(post_id), dict) else None
+
+        if action == "delete":
+            msg_to_delete = prev_id or (entry.get("comment_ids", {}).get(username) if entry else None)
+            if msg_to_delete:
+                tg("deleteMessage", {"chat_id": chat_id, "message_id": msg_to_delete})
+            if entry:
+                entry.get("votes", {}).pop(username, None)
+                entry.get("comment_ids", {}).pop(username, None)
                 save_slug_map(SLUG_MAP)
                 update_average(post_id)
             self.wfile.write(json.dumps({"ok": True}).encode())
@@ -344,7 +348,15 @@ class Handler(BaseHTTPRequestHandler):
 
         text = format_comment(data)
 
-        if action == "update" and prev_id:
+        # Server-side deduplication: if user already has a comment, edit it
+        existing_comment_id = entry.get("comment_ids", {}).get(username) if entry else None
+        if existing_comment_id:
+            res = tg("editMessageText", {
+                "chat_id":    chat_id,
+                "message_id": existing_comment_id,
+                "text":       text,
+            })
+        elif action == "update" and prev_id:
             res = tg("editMessageText", {
                 "chat_id":    chat_id,
                 "message_id": prev_id,
@@ -353,20 +365,17 @@ class Handler(BaseHTTPRequestHandler):
         else:
             payload = {"chat_id": chat_id, "text": text}
             if discussion_thread_id:
-                # reply_to_message_id makes the comment appear under the channel post.
-                # message_thread_id is only for forum supergroups — do NOT use it here.
                 payload["reply_to_message_id"]         = discussion_thread_id
                 payload["allow_sending_without_reply"] = True
             res = tg("sendMessage", payload)
 
         comment_msg_id = res.get("result", {}).get("message_id") if res else None
-        print(f"TG sendMessage result: {res}")
-        print(f"Result: comment_id={comment_msg_id}")
+        print(f"TG result: {res}")
 
-        # Track vote and update average in channel button message
-        entry = SLUG_MAP.get(post_id)
-        if isinstance(entry, dict):
-            entry.setdefault("votes", {})[username] = final
+        # Track vote, comment_id, and update average
+        if entry is not None:
+            entry.setdefault("votes", {})[username]       = final
+            entry.setdefault("comment_ids", {})[username] = comment_msg_id
             save_slug_map(SLUG_MAP)
             update_average(post_id)
 

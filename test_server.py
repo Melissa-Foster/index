@@ -179,11 +179,11 @@ class TestFormatComment(unittest.TestCase):
 
     def test_final_score_shown(self):
         result = server.format_comment(self.BASE)
-        self.assertIn("75/100", result)
+        self.assertIn("75/17", result)
 
     def test_all_four_subcriteria_shown(self):
         result = server.format_comment(self.BASE)
-        for key in ("Содержание", "Удобство", "Визуал", "Идея"):
+        for key in ("Смысл", "Удобство", "Визуал", "Идея"):
             self.assertIn(key, result)
 
     def test_comment_text_shown_when_present(self):
@@ -219,15 +219,15 @@ class TestScoreBar(unittest.TestCase):
         self.assertEqual(server.score_bar(0), "○○○○○")
 
     def test_max_is_all_filled(self):
-        self.assertEqual(server.score_bar(10), "●●●●●")
+        self.assertEqual(server.score_bar(5), "●●●●●")
 
     def test_always_five_chars(self):
-        for i in range(11):
+        for i in range(6):
             bar = server.score_bar(i)
             self.assertEqual(len(bar), 5, f"score_bar({i}) has wrong length")
 
     def test_partial_fill(self):
-        bar = server.score_bar(5)
+        bar = server.score_bar(3)  # 3/5 → ~3 filled, ~2 empty
         filled = bar.count("●")
         empty  = bar.count("○")
         self.assertEqual(filled + empty, 5)

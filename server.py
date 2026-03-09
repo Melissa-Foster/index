@@ -205,6 +205,10 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
 
     photo_msg_id = res["result"]["message_id"]
 
+    # Extract the largest photo's file_id for the proxy endpoint
+    photos = res["result"].get("photo", [])
+    photo_file_id = photos[-1]["file_id"] if photos else ""
+
     # Step 2: send button message (text is middle dot — invisible until first vote)
     button_url = f"{MINI_APP_URL}?startapp={slug}"
     res2 = tg("sendMessage", {
@@ -222,7 +226,8 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
         "button_text":    button_text,
         "name":           name,
         "subtitle":       subtitle,
-        "photo_url":      photo_url,
+        "photo_url":      photo_url,       # optional manual override URL
+        "photo_file_id":  photo_file_id,   # auto-captured Telegram file_id
         "votes":          {},
         "comment_ids":    {},  # {username: comment_msg_id}
     }
@@ -276,6 +281,47 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
+        # ── GET /photo/{slug} — proxy Telegram post photo for mini-app ────────
+        if self.path.startswith("/photo/"):
+            slug  = self.path[7:].split("?")[0]
+            entry = SLUG_MAP.get(slug)
+            if not entry or not isinstance(entry, dict):
+                self.send_response(404); self.end_headers(); return
+
+            # Prefer manual override URL → redirect
+            override = entry.get("photo_url", "")
+            if override:
+                self.send_response(302)
+                self.send_header("Location", override)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                return
+
+            # Resolve Telegram file_id → file_path → proxy image bytes
+            file_id = entry.get("photo_file_id", "")
+            if not file_id:
+                self.send_response(404); self.end_headers(); return
+            file_res = tg("getFile", {"file_id": file_id})
+            if not file_res or not file_res.get("ok"):
+                self.send_response(404); self.end_headers(); return
+            file_path = file_res["result"]["file_path"]
+            tg_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+            try:
+                with urllib.request.urlopen(tg_url) as img:
+                    img_bytes   = img.read()
+                    content_type = img.headers.get("Content-Type", "image/jpeg")
+                self.send_response(200)
+                self.send_header("Content-Type", content_type)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Cache-Control", "public, max-age=86400")
+                self.send_header("Content-Length", str(len(img_bytes)))
+                self.end_headers()
+                self.wfile.write(img_bytes)
+            except Exception as e:
+                print(f"Photo proxy error: {e}")
+                self.send_response(502); self.end_headers()
+            return
+
         # ── GET /post/{slug} — mini-app fetches post metadata ─────────────────
         if self.path.startswith("/post/"):
             slug = self.path[6:].split("?")[0]

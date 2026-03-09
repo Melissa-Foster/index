@@ -91,12 +91,28 @@ html, body {
 /* Info block */
 .header-info { flex: 1; min-width: 0; }
 
+.header-name {
+  font-size: 24px;
+  font-weight: 500;
+  color: #1C1C1E;
+  line-height: 1.05;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: font-size 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.header.collapsed .header-name {
+  font-size: 18px;
+  margin-bottom: 0;
+}
+
 .header-subtitle {
   font-size: 13px;
   color: #7B4FFF;
   font-weight: 500;
   line-height: 1.2;
-  margin-bottom: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -111,22 +127,6 @@ html, body {
 .header.collapsed .header-subtitle {
   max-height: 0;
   opacity: 0;
-  margin-bottom: 0;
-}
-
-.header-name {
-  font-size: 26px;
-  font-weight: 500;
-  color: #1C1C1E;
-  line-height: 1.05;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: font-size 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.header.collapsed .header-name {
-  font-size: 19px;
 }
 
 /* Score block (right) */
@@ -135,12 +135,27 @@ html, body {
   flex-shrink: 0;
 }
 
+.header-score-val {
+  font-size: 26px;
+  font-weight: 500;
+  color: #7B4FFF;
+  line-height: 1;
+  margin-bottom: 2px;
+  transition:
+    font-size 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.header.collapsed .header-score-val {
+  font-size: 20px;
+  margin-bottom: 0;
+}
+
 .header-score-label {
   font-size: 12px;
   color: #AEAEB2;
   font-weight: 400;      /* Normal — gray */
   line-height: 1.2;
-  margin-bottom: 2px;
   max-height: 18px;
   opacity: 1;
   transition:
@@ -152,21 +167,6 @@ html, body {
 .header.collapsed .header-score-label {
   max-height: 0;
   opacity: 0;
-  margin-bottom: 0;
-}
-
-.header-score-val {
-  font-size: 28px;
-  font-weight: 500;
-  color: #7B4FFF;
-  line-height: 1;
-  transition:
-    font-size 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.header.collapsed .header-score-val {
-  font-size: 20px;
 }
 
 .header-score-val .denom {
@@ -177,18 +177,9 @@ html, body {
 
 .header-score-val.bump { transform: scale(1.15); }
 
-/* ── ALREADY BANNER ──────────────────────────────── */
-.already-banner {
-  display: none; align-items: center; gap: 10px;
-  background: #EDE8FF; border-radius: 14px;
-  padding: 12px 16px; margin: 16px 20px 0;
-  font-size: 13px; color: #7B4FFF; font-weight: 500; line-height: 1.5;
-}
-.already-banner.show { display: flex; }
-
 /* ── SCROLL BODY ─────────────────────────────────── */
 .body {
-  padding: 0 20px calc(110px + env(safe-area-inset-bottom, 20px));
+  padding: 0 20px calc(165px + env(safe-area-inset-bottom, 20px));
 }
 
 /* ── CRITERIA BLOCK ──────────────────────────────── */
@@ -203,11 +194,11 @@ html, body {
 }
 
 .crit-name {
-  font-size: 26px;
+  font-size: 18px;
   font-weight: 500;
   color: #1C1C1E;
-  line-height: 1.1;
-  margin-bottom: 6px;
+  line-height: 1.2;
+  margin-bottom: 5px;
 }
 
 .crit-desc {
@@ -215,15 +206,15 @@ html, body {
   font-weight: 400;      /* Normal — gray */
   color: #636366;
   line-height: 1.45;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
 .crit-hint {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 400;      /* Normal — gray */
-  color: #AEAEB2;
-  line-height: 1.4;
-  margin-bottom: 18px;
+  color: #636366;
+  line-height: 1.45;
+  margin-bottom: 16px;
 }
 
 /* ── SCORE BUTTONS ───────────────────────────────── */
@@ -234,7 +225,7 @@ html, body {
 }
 
 .score-btn {
-  height: 52px;
+  height: 46px;
   border-radius: 14px;
   border: none;
   background: #EDE8FF;
@@ -311,7 +302,7 @@ textarea::placeholder {
 
 .submit-btn {
   width: 100%;
-  background: #7B4FFF;
+  background: #1C1C1E;
   color: #fff; border: none;
   border-radius: 18px;
   padding: 17px;
@@ -324,14 +315,38 @@ textarea::placeholder {
 .submit-btn:active { transform: scale(0.98); }
 .submit-btn:disabled { opacity: 0.28; cursor: default; transform: none; }
 
-.bottom-system-link {
-  display: flex; align-items: center; justify-content: center; gap: 4px;
+.bottom-hint-row {
   padding-top: 10px;
+  text-align: center;
+  min-height: 22px;
+}
+
+.bottom-system-link {
+  display: inline-flex; align-items: center; gap: 4px;
   font-size: 13px; color: #7B4FFF; font-weight: 500; cursor: pointer;
   opacity: 0.75;
 }
 
 .bottom-system-link svg { width: 11px; height: 11px; }
+
+.bottom-error {
+  font-size: 13px; color: #FF3B30; font-weight: 400;
+}
+
+.delete-inline-btn {
+  display: none;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 18px;
+  padding: 14px;
+  font-family: 'TTCommons', sans-serif;
+  font-size: 17px; font-weight: 500; color: #1C1C1E;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.delete-inline-btn:active { transform: scale(0.98); opacity: 0.65; }
 
 /* ── SUCCESS PAGE ────────────────────────────────── */
 #page-success {
@@ -343,106 +358,56 @@ textarea::placeholder {
 }
 #page-success.active { display: flex; }
 
-.success-anim {
-  position: relative; width: 88px; height: 88px; margin-bottom: 28px;
-}
-
-.ring {
-  position: absolute; inset: 0; border-radius: 50%;
-  border: 2px solid #7B4FFF; opacity: 0;
-  animation: ringOut 1.5s cubic-bezier(0.2,0.8,0.4,1) forwards;
-}
-.ring:nth-child(1) { animation-delay: 0.05s; }
-.ring:nth-child(2) { animation-delay: 0.28s; }
-.ring:nth-child(3) { animation-delay: 0.50s; }
-
-@keyframes ringOut {
-  0%   { transform: scale(0.3); opacity: 0.85; }
-  100% { transform: scale(3.0); opacity: 0; }
-}
-
-.success-core {
-  position: absolute; inset: 0;
-  background: #7B4FFF; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  animation: corePop 0.48s cubic-bezier(0.34,1.56,0.64,1) 0.05s both;
-}
-
-@keyframes corePop {
-  from { transform: scale(0); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
-}
-
-.success-check {
-  color: white; font-size: 34px; line-height: 1;
-  animation: checkIn 0.3s ease 0.36s both;
-}
-
-@keyframes checkIn {
-  from { transform: scale(0) rotate(-15deg); opacity: 0; }
-  to   { transform: scale(1) rotate(0); opacity: 1; }
-}
-
+/* Score number with count-up animation */
 .success-score-num {
-  font-size: 80px; font-weight: 500;
+  font-size: 120px; font-weight: 500;
   color: #7B4FFF; line-height: 1;
-  animation: fadeUp 0.45s cubic-bezier(0.32,0.72,0,1) 0.46s both;
+  margin-bottom: 40px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.32,0.72,0,1);
 }
-
-.success-denom {
-  font-size: 28px; color: #C8C8CC; font-weight: 400;
+.success-score-num.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.success-score-sub {
-  font-size: 14px; font-weight: 400; color: #AEAEB2;
-  margin-top: 4px; margin-bottom: 14px;
-  animation: fadeUp 0.45s cubic-bezier(0.32,0.72,0,1) 0.54s both;
-}
-
 .success-title {
-  font-size: 24px; font-weight: 500; text-align: center; margin-bottom: 10px;
-  animation: fadeUp 0.45s cubic-bezier(0.32,0.72,0,1) 0.60s both;
+  font-size: 26px; font-weight: 500; text-align: center; margin-bottom: 10px;
+  animation: fadeUp 0.4s cubic-bezier(0.32,0.72,0,1) 0.55s both;
 }
 
 .success-sub {
   font-size: 15px; font-weight: 400; color: #636366; line-height: 1.55;
-  text-align: center; margin-bottom: 36px;
-  animation: fadeUp 0.45s cubic-bezier(0.32,0.72,0,1) 0.66s both;
+  text-align: center; margin-bottom: 52px;
+  animation: fadeUp 0.4s cubic-bezier(0.32,0.72,0,1) 0.65s both;
 }
 
 .success-actions {
   width: 100%; display: flex; flex-direction: column; gap: 9px;
-  animation: fadeUp 0.45s cubic-bezier(0.32,0.72,0,1) 0.74s both;
+  animation: fadeUp 0.4s cubic-bezier(0.32,0.72,0,1) 0.75s both;
 }
 
-.btn-edit {
-  width: 100%; background: #EDE8FF; color: #7B4FFF;
-  border: none; border-radius: 18px; padding: 16px;
-  font-family: 'TTCommons', sans-serif; font-size: 16px; font-weight: 500;
+.btn-to-channel {
+  width: 100%; background: #1C1C1E; color: #fff;
+  border: none; border-radius: 18px; padding: 17px;
+  font-family: 'TTCommons', sans-serif; font-size: 17px; font-weight: 500;
   cursor: pointer; transition: transform 0.15s;
 }
-.btn-edit:active { transform: scale(0.97); }
+.btn-to-channel:active { transform: scale(0.98); }
 
-.btn-delete {
-  width: 100%; background: #FFF0F0; color: #FF453A;
-  border: none; border-radius: 18px; padding: 15px;
-  font-family: 'TTCommons', sans-serif; font-size: 15px; font-weight: 500;
+.btn-edit-rating {
+  width: 100%; background: #F2F2F7; color: #1C1C1E;
+  border: none; border-radius: 18px; padding: 17px;
+  font-family: 'TTCommons', sans-serif; font-size: 17px; font-weight: 500;
   cursor: pointer; transition: transform 0.15s;
 }
-.btn-delete:active { transform: scale(0.97); }
-
-.btn-close-plain {
-  width: 100%; background: #F2F2F7; color: #636366;
-  border: none; border-radius: 18px; padding: 15px;
-  font-family: 'TTCommons', sans-serif; font-size: 15px; font-weight: 400;
-  cursor: pointer; transition: transform 0.15s;
-}
-.btn-close-plain:active { transform: scale(0.97); }
+.btn-edit-rating:active { transform: scale(0.98); }
 
 /* ── MODAL ───────────────────────────────────────── */
 .modal-overlay {
@@ -458,55 +423,77 @@ textarea::placeholder {
 .modal-sheet {
   width: 100%; background: #fff;
   border-radius: 24px 24px 0 0;
-  padding: 12px 20px calc(28px + env(safe-area-inset-bottom, 20px));
-  max-height: 80vh; overflow-y: auto;
+  padding: 24px 20px calc(36px + env(safe-area-inset-bottom, 20px));
+  max-height: 88vh; overflow-y: auto;
   transform: translateY(100%);
   transition: transform 0.34s cubic-bezier(0.32,0.72,0,1);
 }
 .modal-overlay.open .modal-sheet { transform: translateY(0); }
 
-.modal-handle {
-  width: 36px; height: 4px; border-radius: 100px;
-  background: #DDDDE0; margin: 0 auto 20px;
+/* Header row: title + × */
+.modal-header {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 28px;
 }
-
 .modal-title {
-  font-size: 19px; font-weight: 500; margin-bottom: 18px;
+  font-size: 22px; font-weight: 500; color: #1C1C1E;
+}
+.modal-close {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: #F2F2F7; border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  font-size: 15px; color: #636366;
+  transition: opacity 0.15s;
+}
+.modal-close:active { opacity: 0.55; }
+
+/* Numbered section headings */
+.modal-sec {
+  margin-bottom: 28px;
+}
+.modal-sec-heading {
+  font-size: 20px; font-weight: 500; color: #1C1C1E;
+  margin-bottom: 12px;
 }
 
-.modal-sec-title {
-  font-size: 11px; font-weight: 400; color: #AEAEB2;
-  text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 9px;
+/* Body paragraph */
+.modal-p {
+  font-size: 15px; font-weight: 400; color: #1C1C1E;
+  line-height: 1.5; margin-bottom: 8px;
 }
+.modal-p:last-child { margin-bottom: 0; }
 
-.formula-rows {
-  background: #F7F7F8; border-radius: 16px;
-  padding: 4px 16px; margin-bottom: 12px;
-}
-
-.formula-row {
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-  padding: 11px 0; border-bottom: 1px solid #EBEBEB; font-size: 14px;
-}
-.formula-row:last-child { border-bottom: none; }
-.formula-row-label { color: #636366; flex: 1; line-height: 1.4; font-weight: 400; }
-.formula-row-val { font-weight: 500; color: #1C1C1E; white-space: nowrap; }
-
-.formula-highlight {
+/* Purple formula box */
+.modal-formula {
   background: #EDE8FF; border-radius: 14px;
-  padding: 13px 16px; margin-bottom: 20px;
-  font-size: 14px; color: #7B4FFF; font-weight: 500;
-  text-align: center; line-height: 1.55;
+  padding: 15px 16px; margin-top: 14px;
+  font-size: 15px; color: #7B4FFF; font-weight: 500;
+  text-align: center;
 }
 
-.mult-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
-
+/* Multiplier table */
+.mult-table-label {
+  font-size: 13px; font-weight: 400; color: #AEAEB2;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #F0F0F0;
+  margin-top: 14px;
+}
 .mult-row {
   display: flex; align-items: center; justify-content: space-between;
-  background: #F7F7F8; border-radius: 12px; padding: 10px 14px; font-size: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid #F0F0F0;
+  font-size: 15px;
 }
-.mult-score { color: #636366; font-weight: 400; }
+.mult-row:last-child { border-bottom: none; }
+.mult-score { color: #1C1C1E; font-weight: 400; }
 .mult-val { font-weight: 500; color: #7B4FFF; }
+
+/* Note under last formula */
+.modal-note {
+  font-size: 13px; font-weight: 400; color: #AEAEB2;
+  margin-top: 10px;
+}
 
 </style>
 </head>
@@ -524,21 +511,15 @@ textarea::placeholder {
       <div class="header-thumb-placeholder" id="header-thumb-inner">✦</div>
     </div>
     <div class="header-info">
-      <div class="header-subtitle" id="header-subtitle">Сайт, релиз 2026</div>
       <div class="header-name" id="header-name">Название</div>
+      <div class="header-subtitle" id="header-subtitle">Сайт, релиз 2026</div>
     </div>
     <div class="header-score">
-      <div class="header-score-label">Оценка</div>
       <div class="header-score-val" id="live-score">
         —<span class="denom">/17</span>
       </div>
+      <div class="header-score-label">Оценка</div>
     </div>
-  </div>
-
-  <!-- ALREADY VOTED -->
-  <div class="already-banner" id="already-banner">
-    <span>✏️</span>
-    <span>Вы уже голосовали. Можно изменить или удалить оценку.</span>
   </div>
 
   <!-- BODY -->
@@ -553,10 +534,9 @@ textarea::placeholder {
         <div class="comment-username" id="user-name">Аноним</div>
       </div>
       <textarea id="comment-input"
-        placeholder="Текст рецензии"
-        maxlength="500" rows="4"
+        placeholder="Поделитесь мнением о дизайне..."
+        rows="4"
         oninput="onCommentInput(this)"></textarea>
-      <div class="char-hint" id="char-hint">0 / 500</div>
     </div>
 
   </div>
@@ -566,12 +546,11 @@ textarea::placeholder {
     <button class="submit-btn" id="submit-btn" disabled onclick="handleSubmit()">
       Опубликовать оценку
     </button>
-    <div class="bottom-system-link" onclick="openModal()">
-      Система оценки
-      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"
-           stroke-linecap="round" stroke-linejoin="round">
-        <path d="M7 1h4v4M11 1L6.5 5.5M5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h7a1 1 0 001-1V7"/>
-      </svg>
+    <button class="delete-inline-btn" id="delete-inline-btn" onclick="deleteRating()">
+      Удалить
+    </button>
+    <div class="bottom-hint-row" id="bottom-hint-row">
+      <span class="bottom-error">Поставьте оценки по всем критериям</span>
     </div>
   </div>
 
@@ -583,29 +562,16 @@ textarea::placeholder {
 ══════════════════════════════════════════════ -->
 <div id="page-success" class="page">
 
-  <div class="success-anim">
-    <div class="ring"></div>
-    <div class="ring"></div>
-    <div class="ring"></div>
-    <div class="success-core">
-      <div class="success-check">✓</div>
-    </div>
-  </div>
-
-  <div class="success-score-num" id="success-score">
-    —<span class="success-denom">/17</span>
-  </div>
-  <div class="success-score-sub">Ваша оценка</div>
+  <div class="success-score-num" id="success-score">0</div>
 
   <div class="success-title">Оценка опубликована!</div>
   <div class="success-sub">
-    Ваш голос появился в комментариях<br>под постом в канале <strong>index</strong>
+    Теперь её видно в комментариях<br>под постом
   </div>
 
   <div class="success-actions">
-    <button class="btn-edit" onclick="editRating()">Изменить оценку</button>
-    <button class="btn-delete" onclick="deleteRating()">Удалить оценку</button>
-    <button class="btn-close-plain" onclick="closeMiniApp()">Закрыть</button>
+    <button class="btn-to-channel" onclick="closeMiniApp()">Вернуться в канал</button>
+    <button class="btn-edit-rating" onclick="editRating()">Изменить оценку</button>
   </div>
 
 </div>
@@ -616,46 +582,42 @@ textarea::placeholder {
 ══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="system-modal" onclick="maybeCloseModal(event)">
   <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Система оценки MVP</div>
 
-    <div class="modal-sec-title">Как считается итог</div>
-    <div class="formula-rows">
-      <div class="formula-row">
-        <span class="formula-row-label">База = К1 (Смысл) + К2 (Удобство) + К3 (Визуал)</span>
-        <span class="formula-row-val">макс. 15</span>
-      </div>
-      <div class="formula-row">
-        <span class="formula-row-label">Если база &lt; 9 или любой критерий &lt; 2 — итог равен базе</span>
-        <span class="formula-row-val">без ×</span>
-      </div>
-      <div class="formula-row">
-        <span class="formula-row-label">Если база ≥ 9 и каждый критерий ≥ 2 — включается множитель от Идеи</span>
-        <span class="formula-row-val">+ до 15%</span>
-      </div>
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="modal-title">Система оценки</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
 
-    <div class="formula-highlight">
-      Итог = round(База × Коэффициент идеи) · диапазон 3–17
+    <!-- 1. Оценка базы -->
+    <div class="modal-sec">
+      <div class="modal-sec-heading">1. Оценка базы</div>
+      <p class="modal-p">База — функциональная зрелость дизайна: сумма критериев Смысл, Удобство и Визуал. Каждый критерий — от 1 до 5 баллов.</p>
+      <p class="modal-p">База: от 3 до 15 баллов</p>
+      <div class="modal-formula">База = Смысл + Удобство + Визуал</div>
     </div>
 
-    <div class="modal-sec-title">Множитель «Идея / Атмосфера»</div>
-    <div class="mult-list">
-      <div class="mult-row"><span class="mult-score">1–2 балла</span><span class="mult-val">× 1.00</span></div>
+    <!-- 2. Оценка идеи -->
+    <div class="modal-sec">
+      <div class="modal-sec-heading">2. Оценка идеи</div>
+      <p class="modal-p">Если База &lt; 9 или хотя бы один критерий &lt; 2, то идея не влияет на итоговую оценку. Идея не может компенсировать слабый фундамент дизайна</p>
+      <p class="modal-p">Если база ≥ 9 и каждый критерий ≥ 2, то итог усиливается за счёт идеи</p>
+      <p class="modal-p">Идея: от 1 до 5 баллов</p>
+      <div class="mult-table-label">Оценка идеи и коэффициент</div>
+      <div class="mult-row"><span class="mult-score">1-2 балла</span><span class="mult-val">× 1.00</span></div>
       <div class="mult-row"><span class="mult-score">3 балла</span><span class="mult-val">× 1.05</span></div>
       <div class="mult-row"><span class="mult-score">4 балла</span><span class="mult-val">× 1.10</span></div>
       <div class="mult-row"><span class="mult-score">5 баллов</span><span class="mult-val">× 1.15</span></div>
     </div>
 
-    <div class="modal-sec-title">Общий принцип</div>
-    <div class="formula-rows">
-      <div class="formula-row">
-        <span class="formula-row-label">База — функциональная зрелость: смысл, удобство, визуал. Это фундамент оценки.</span>
-      </div>
-      <div class="formula-row">
-        <span class="formula-row-label">Порог 9 баллов: сначала фундамент, потом характер. Идея не компенсирует слабый фундамент.</span>
-      </div>
+    <!-- 3. Итоговая оценка -->
+    <div class="modal-sec">
+      <div class="modal-sec-heading">3. Итоговая оценка</div>
+      <p class="modal-p">Итог: от 3 до 17 баллов</p>
+      <div class="modal-formula">Итог = round (База × коэффициент идеи)</div>
+      <div class="modal-note">round — округление до целого</div>
     </div>
+
   </div>
 </div>
 
@@ -677,26 +639,26 @@ const CRITERIA = [
   {
     id: 'content', role: 'K1',
     name: 'Смысл',
-    desc: 'Насколько дизайн раскрывает смысл продукта и помогает ему работать',
-    hint: '1 — непонятно, 5 — всё очевидно'
+    desc: 'Насколько дизайн помогает решать задачу продукта.',
+    hint: '1 — мешает, 5 — помогает идеально'
   },
   {
     id: 'usability', role: 'K2',
     name: 'Удобство',
-    desc: 'Насколько интерфейс прост, предсказуем и комфортен в использовании',
-    hint: '1 — мешает, 5 — помогает идеально'
+    desc: 'Насколько интерфейс простой и понятный.',
+    hint: '1 — запутанный, 5 — интуитивный'
   },
   {
     id: 'visual', role: 'K3',
     name: 'Визуал',
-    desc: 'Насколько оформление помогает ориентироваться и считывать иерархию',
-    hint: '1 — отвлекает, 5 — усиливает'
+    desc: 'Насколько дизайн аккуратный и системный.',
+    hint: '1 — хаотичный, 5 — системный'
   },
   {
     id: 'idea', role: 'Идея',
-    name: 'Идея / Атмосфера',
-    desc: 'Есть ли осмысленная дизайн-идея, характер и атмосфера продукта',
-    hint: '1 — не считывается, 5 — запоминается'
+    name: 'Идея',
+    desc: 'Насколько сильна визуальная метафора в дизайне.',
+    hint: '1 — нет метафоры, 5 — сильная метафора'
   }
 ];
 
@@ -714,11 +676,6 @@ async function fetchPostData() {
     if (data.ok) {
       if (data.name)     document.getElementById('header-name').textContent     = data.name;
       if (data.subtitle) document.getElementById('header-subtitle').textContent = data.subtitle;
-      if (data.photo_url) {
-        const thumb = document.getElementById('header-thumb');
-        thumb.innerHTML = `<img src="${data.photo_url}" alt="${data.name || ''}"
-          onerror="this.parentElement.innerHTML='<div class=header-thumb-placeholder>✦</div>'">`;
-      }
     }
   } catch (e) {
     // server unavailable or no data — keep defaults
@@ -733,6 +690,11 @@ window.addEventListener('scroll', () => {
 
 // ── INIT ─────────────────────────────────────────
 function init() {
+  // Set thumbnail from photo proxy (same image as the Telegram post, square-cropped)
+  const thumb = document.getElementById('header-thumb');
+  thumb.innerHTML = `<img src="${SERVER}/photo/${POST_ID}" alt=""
+    onerror="this.parentElement.innerHTML='<div class=header-thumb-placeholder>✦</div>'">`;
+
   fetchPostData();
 
   // Fill user info
@@ -750,10 +712,7 @@ function init() {
     scores   = { ...r.scores };
     comment  = r.comment || '';
     hasVoted = true;
-    document.getElementById('comment-input').value   = comment;
-    document.getElementById('char-hint').textContent = comment.length + ' / 500';
-    document.getElementById('already-banner').classList.add('show');
-    document.getElementById('submit-btn').textContent = 'Обновить оценку';
+    document.getElementById('comment-input').value = comment;
   }
 
   renderCriteria();
@@ -793,7 +752,6 @@ function selectScore(id, val) {
 
 function onCommentInput(el) {
   comment = el.value;
-  document.getElementById('char-hint').textContent = comment.length + ' / 500';
 }
 
 // ── SCORE FORMULA (1–5 scale, range 3–17) ────────
@@ -821,12 +779,34 @@ function updateLiveScore() {
   setTimeout(() => el.classList.remove('bump'), 320);
 }
 
+const SYSTEM_LINK_HTML = `<span class="bottom-system-link" onclick="openModal()">
+    Система оценки
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 1h4v4M11 1L6.5 5.5M5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h7a1 1 0 001-1V7"/>
+    </svg>
+  </span>`;
+
 function updateSubmitState() {
   const allFilled = CRITERIA.every(c => scores[c.id]);
-  const btn = document.getElementById('submit-btn');
-  btn.disabled = !allFilled;
-  if (!allFilled) {
-    btn.textContent = hasVoted ? 'Обновить оценку' : 'Опубликовать оценку';
+  const btn       = document.getElementById('submit-btn');
+  const hint      = document.getElementById('bottom-hint-row');
+  const deleteBtn = document.getElementById('delete-inline-btn');
+
+  if (hasVoted) {
+    // Edit mode: button always enabled, delete visible, system link always shown
+    btn.disabled             = false;
+    btn.textContent          = 'Обновить оценку';
+    deleteBtn.style.display  = 'block';
+    hint.innerHTML           = SYSTEM_LINK_HTML;
+  } else {
+    // New rating: button enabled only when all criteria filled, no delete
+    btn.disabled             = !allFilled;
+    btn.textContent          = 'Опубликовать оценку';
+    deleteBtn.style.display  = 'none';
+    hint.innerHTML           = allFilled
+      ? SYSTEM_LINK_HTML
+      : `<span class="bottom-error">Поставьте оценки по всем критериям</span>`;
   }
 }
 
@@ -843,6 +823,28 @@ async function sendToServer(data) {
     console.error('Server error:', e);
     return null;
   }
+}
+
+// ── SUCCESS SCORE ANIMATION ───────────────────────
+function showSuccessScore(target) {
+  const el = document.getElementById('success-score');
+  el.textContent = '0';
+
+  // Fade-in the number
+  requestAnimationFrame(() => el.classList.add('visible'));
+
+  // Count up from 0 → target over ~700ms with ease-out
+  const duration = target > 10 ? 700 : 450;
+  const start    = performance.now();
+  function step(now) {
+    const p  = Math.min((now - start) / duration, 1);
+    const ep = 1 - Math.pow(1 - p, 3);          // ease-out cubic
+    el.textContent = Math.round(ep * target);
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = target;
+  }
+  // Start counting after a brief pause so fade-in is visible first
+  setTimeout(() => requestAnimationFrame(step), 80);
 }
 
 // ── SUBMIT ────────────────────────────────────────
@@ -873,16 +875,20 @@ async function handleSubmit() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rating));
   hasVoted = true;
 
-  // Show success
-  document.getElementById('success-score').innerHTML =
-    `${final}<span class="success-denom">/17</span>`;
+  // Show success page with count-up animation
   document.getElementById('page-rating').classList.remove('active');
   document.getElementById('page-success').classList.add('active');
+  showSuccessScore(final);
 }
 
 // ── EDIT / DELETE ─────────────────────────────────
 function editRating() {
   haptic('medium');
+  // Reset success score so animation replays on next submit
+  const scoreEl = document.getElementById('success-score');
+  scoreEl.classList.remove('visible');
+  scoreEl.textContent = '0';
+
   document.getElementById('page-success').classList.remove('active');
   document.getElementById('page-rating').classList.add('active');
   window.scrollTo(0, 0);
@@ -899,11 +905,8 @@ async function deleteRating() {
 
   document.getElementById('page-success').classList.remove('active');
   document.getElementById('page-rating').classList.add('active');
-  document.getElementById('comment-input').value   = '';
-  document.getElementById('char-hint').textContent = '0 / 500';
-  document.getElementById('already-banner').classList.remove('show');
-  document.getElementById('submit-btn').textContent = 'Опубликовать оценку';
-  document.getElementById('live-score').innerHTML   = '—<span class="denom">/17</span>';
+  document.getElementById('comment-input').value = '';
+  document.getElementById('live-score').innerHTML = '—<span class="denom">/17</span>';
   renderCriteria();
   updateSubmitState();
   window.scrollTo(0, 0);
@@ -912,10 +915,10 @@ async function deleteRating() {
 function closeMiniApp() { if (tg) tg.close(); }
 
 // ── MODAL ─────────────────────────────────────────
-function openModal() { document.getElementById('system-modal').classList.add('open'); }
+function openModal()  { document.getElementById('system-modal').classList.add('open'); }
+function closeModal() { document.getElementById('system-modal').classList.remove('open'); }
 function maybeCloseModal(e) {
-  if (e.target === document.getElementById('system-modal'))
-    document.getElementById('system-modal').classList.remove('open');
+  if (e.target === document.getElementById('system-modal')) closeModal();
 }
 
 init();

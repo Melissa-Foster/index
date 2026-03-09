@@ -39,7 +39,7 @@ def save_slug_map(m):
         json.dump(m, f)
 
 POST_MAP = load_map()       # {channel_post_id: discussion_thread_id}
-SLUG_MAP = load_slug_map()  # {slug: {channel_msg_id, button_msg_id, button_text, votes}}
+SLUG_MAP = load_slug_map()  # {slug: {channel_msg_id, button_msg_id, button_text, votes, name, subtitle, photo_url, ...}}
 
 # ── Telegram API helper ───────────────────────────────────────────────────────
 
@@ -185,11 +185,12 @@ def handle_telegram_update(update):
 
 # ── post publisher ────────────────────────────────────────────────────────────
 
-def publish_post(photo, caption, slug, button_text="Оценить дизайн ✦", parse_mode="Markdown"):
+def publish_post(photo, caption, slug, button_text="Оценить дизайн ✦",
+                 parse_mode="Markdown", name="", subtitle="", photo_url=""):
     """
     1. Publish photo (no button) — comment section stays visible.
     2. Send rating button as a separate channel message.
-    SLUG_MAP[slug] stores channel_msg_id, button_msg_id, button_text, votes.
+    SLUG_MAP[slug] stores channel_msg_id, button_msg_id, button_text, votes, name, subtitle, photo_url.
     """
     # Step 1: publish photo with no inline keyboard
     res = tg("sendPhoto", {
@@ -204,11 +205,11 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
 
     photo_msg_id = res["result"]["message_id"]
 
-    # Step 2: send button message (text is empty until first vote)
+    # Step 2: send button message (text is middle dot — invisible until first vote)
     button_url = f"{MINI_APP_URL}?startapp={slug}"
     res2 = tg("sendMessage", {
         "chat_id": CHANNEL_ID,
-        "text":    "·",  # zero-width space — invisible until first vote
+        "text":    "·",
         "reply_markup": {
             "inline_keyboard": [[{"text": button_text, "url": button_url}]]
         }
@@ -219,6 +220,9 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
         "channel_msg_id": photo_msg_id,
         "button_msg_id":  button_msg_id,
         "button_text":    button_text,
+        "name":           name,
+        "subtitle":       subtitle,
+        "photo_url":      photo_url,
         "votes":          {},
         "comment_ids":    {},  # {username: comment_msg_id}
     }
@@ -245,7 +249,13 @@ ADMIN_FORM = """<!DOCTYPE html>
 <form method="POST" action="/publish">
   <label>Slug (короткий ID поста, напр: sber, yandex, tinkoff)</label>
   <input name="slug" required placeholder="sber" pattern="[a-z0-9_-]+" title="только латиница, цифры, _ и -">
-  <label>Фото (Telegram file_id или https:// URL)</label>
+  <label>Название (отображается в мини-апп)</label>
+  <input name="name" required placeholder="Сбербанк">
+  <label>Подзаголовок (тип + год, напр: Сайт, релиз 2026)</label>
+  <input name="subtitle" required placeholder="Сайт, релиз 2026">
+  <label>Фото для мини-апп (https:// URL превью)</label>
+  <input name="photo_url" placeholder="https://example.com/thumb.jpg">
+  <label>Фото поста (Telegram file_id или https:// URL)</label>
   <input name="photo" required placeholder="AgAC... или https://example.com/photo.jpg">
   <label>Подпись (Markdown: *жирный*, _курсив_, [текст](https://url))</label>
   <textarea name="caption" rows="6" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание...\n\n[Открыть сайт](https://sber.ru)"></textarea>
@@ -266,6 +276,25 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
+        # ── GET /post/{slug} — mini-app fetches post metadata ─────────────────
+        if self.path.startswith("/post/"):
+            slug = self.path[6:].split("?")[0]
+            entry = SLUG_MAP.get(slug)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            if isinstance(entry, dict):
+                self.wfile.write(json.dumps({
+                    "ok":        True,
+                    "name":      entry.get("name", ""),
+                    "subtitle":  entry.get("subtitle", ""),
+                    "photo_url": entry.get("photo_url", ""),
+                }, ensure_ascii=False).encode())
+            else:
+                self.wfile.write(json.dumps({"ok": False}).encode())
+            return
+
         if self.path == "/admin":
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -309,6 +338,9 @@ class Handler(BaseHTTPRequestHandler):
             caption     = d.get("caption",     "").strip()
             slug        = d.get("slug",        "").strip()
             button_text = d.get("button_text", "Оценить дизайн ✦").strip() or "Оценить дизайн ✦"
+            name        = d.get("name",        "").strip()
+            subtitle    = d.get("subtitle",    "").strip()
+            photo_url   = d.get("photo_url",   "").strip()
             if not photo or not caption or not slug:
                 self.send_response(400)
                 self.send_header("Content-Type", "application/json")
@@ -316,7 +348,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"ok": False,
                     "error": "photo, caption and slug are required"}).encode())
                 return
-            msg_id = publish_post(photo, caption, slug, button_text)
+            msg_id = publish_post(photo, caption, slug, button_text,
+                                  name=name, subtitle=subtitle, photo_url=photo_url)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

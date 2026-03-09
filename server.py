@@ -6,6 +6,10 @@ CHANNEL_ID    = os.environ.get("CHANNEL_ID", "")
 DISCUSSION_ID = os.environ.get("DISCUSSION_ID", "")
 API           = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
+# Maps channel post ID → discussion group thread ID
+# Populated automatically when Telegram forwards posts to the discussion group
+POST_MAP = {}
+
 def tg(method, data):
     req = urllib.request.Request(
         f"{API}/{method}",
@@ -42,8 +46,8 @@ def format_comment(r):
         lines += ["", f"💬 {comment}"]
     return "\n".join(lines)
 
-def parse_startapp(post_id):
-    """Extract discussion_msg_id from startapp param like 'post_001_2'"""
+def parse_channel_post_id(post_id):
+    """Extract channel post ID from startapp param like 'post_001_15' → 15"""
     parts = post_id.split("_")
     if len(parts) >= 3:
         try:
@@ -51,6 +55,24 @@ def parse_startapp(post_id):
         except:
             pass
     return None
+
+def handle_telegram_update(update):
+    """
+    Called when Telegram sends an update to our webhook.
+    Detects auto-forwarded channel posts in the discussion group
+    and stores the mapping: channel_post_id → discussion_thread_id.
+    """
+    msg = update.get("message") or update.get("channel_post")
+    if not msg:
+        return
+
+    # Detect automatic forwards from channel to discussion group
+    if msg.get("is_automatic_forward") and msg.get("forward_from_chat"):
+        channel_post_id = msg.get("forward_from_message_id")
+        discussion_thread_id = msg.get("message_id")
+        if channel_post_id and discussion_thread_id:
+            POST_MAP[channel_post_id] = discussion_thread_id
+            print(f"Mapped channel post {channel_post_id} → discussion thread {discussion_thread_id}")
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -71,19 +93,31 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
+        # Telegram webhook updates come to /tg
+        if self.path == "/tg":
+            handle_telegram_update(data)
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"ok")
+            return
+
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
 
-        action   = data.get("action", "new")
-        post_id  = data.get("postId", "")
-        prev_id  = data.get("prevCommentId")
-        chat_id  = DISCUSSION_ID if DISCUSSION_ID else CHANNEL_ID
+        action          = data.get("action", "new")
+        post_id         = data.get("postId", "")
+        prev_id         = data.get("prevCommentId")
+        chat_id         = DISCUSSION_ID if DISCUSSION_ID else CHANNEL_ID
 
-        # Extract discussion message id from postId e.g. "post_001_2" → 2
-        discussion_msg_id = parse_startapp(post_id)
-        print(f"action={action} post_id={post_id} discussion_msg_id={discussion_msg_id}")
+        # startapp param contains channel post ID (e.g. "post_001_15" → 15)
+        channel_post_id = parse_channel_post_id(post_id)
+
+        # Look up the discussion group thread ID automatically
+        discussion_thread_id = POST_MAP.get(channel_post_id) if channel_post_id else None
+
+        print(f"action={action} post_id={post_id} channel_post_id={channel_post_id} discussion_thread_id={discussion_thread_id} POST_MAP={POST_MAP}")
 
         if action == "delete" and prev_id:
             tg("deleteMessage", {"chat_id": chat_id, "message_id": prev_id})
@@ -99,14 +133,13 @@ class Handler(BaseHTTPRequestHandler):
                 "text": text
             })
         else:
-            if discussion_msg_id:
-                payload = {"chat_id": chat_id, "text": text, "message_thread_id": discussion_msg_id}
-            else:
-                payload = {"chat_id": chat_id, "text": text}
+            payload = {"chat_id": chat_id, "text": text}
+            if discussion_thread_id:
+                payload["message_thread_id"] = discussion_thread_id
             res = tg("sendMessage", payload)
 
         comment_msg_id = res.get("result", {}).get("message_id") if res else None
-        print(f"Result: comment_id={comment_msg_id}, tg_response={res}")
+        print(f"Result: comment_id={comment_msg_id}")
         self.wfile.write(json.dumps({"ok": True, "commentId": comment_msg_id}).encode())
 
     def do_OPTIONS(self):
@@ -119,4 +152,9 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"Server running on port {port}")
+    # Register webhook with Telegram so we receive group updates
+    server_url = os.environ.get("SERVER_URL", "")
+    if server_url:
+        result = tg("setWebhook", {"url": f"{server_url}/tg"})
+        print(f"Webhook set: {result}")
     HTTPServer(("0.0.0.0", port), Handler).serve_forever()

@@ -563,9 +563,8 @@ textarea::placeholder {
       </div>
       <textarea id="comment-input"
         placeholder="Поделитесь мнением о дизайне..."
-        maxlength="500" rows="4"
+        rows="4"
         oninput="onCommentInput(this)"></textarea>
-      <div class="char-hint" id="char-hint">0 / 500</div>
     </div>
 
   </div>
@@ -755,8 +754,7 @@ function init() {
     scores   = { ...r.scores };
     comment  = r.comment || '';
     hasVoted = true;
-    document.getElementById('comment-input').value   = comment;
-    document.getElementById('char-hint').textContent = comment.length + ' / 500';
+    document.getElementById('comment-input').value = comment;
     document.getElementById('already-banner').classList.add('show');
     document.getElementById('submit-btn').textContent = 'Обновить оценку';
   }
@@ -798,7 +796,6 @@ function selectScore(id, val) {
 
 function onCommentInput(el) {
   comment = el.value;
-  document.getElementById('char-hint').textContent = comment.length + ' / 500';
 }
 
 // ── SCORE FORMULA (1–5 scale, range 3–17) ────────
@@ -914,8 +911,7 @@ async function deleteRating() {
 
   document.getElementById('page-success').classList.remove('active');
   document.getElementById('page-rating').classList.add('active');
-  document.getElementById('comment-input').value   = '';
-  document.getElementById('char-hint').textContent = '0 / 500';
+  document.getElementById('comment-input').value = '';
   document.getElementById('already-banner').classList.remove('show');
   document.getElementById('submit-btn').textContent = 'Опубликовать оценку';
   document.getElementById('live-score').innerHTML   = '—<span class="denom">/17</span>';

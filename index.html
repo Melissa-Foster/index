@@ -324,14 +324,23 @@ textarea::placeholder {
 .submit-btn:active { transform: scale(0.98); }
 .submit-btn:disabled { opacity: 0.28; cursor: default; transform: none; }
 
-.bottom-system-link {
-  display: flex; align-items: center; justify-content: center; gap: 4px;
+.bottom-hint-row {
   padding-top: 10px;
+  text-align: center;
+  min-height: 22px;
+}
+
+.bottom-system-link {
+  display: inline-flex; align-items: center; gap: 4px;
   font-size: 13px; color: #7B4FFF; font-weight: 500; cursor: pointer;
   opacity: 0.75;
 }
 
 .bottom-system-link svg { width: 11px; height: 11px; }
+
+.bottom-error {
+  font-size: 13px; color: #FF3B30; font-weight: 400;
+}
 
 /* ── SUCCESS PAGE ────────────────────────────────── */
 #page-success {
@@ -566,12 +575,8 @@ textarea::placeholder {
     <button class="submit-btn" id="submit-btn" disabled onclick="handleSubmit()">
       Опубликовать оценку
     </button>
-    <div class="bottom-system-link" onclick="openModal()">
-      Система оценки
-      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"
-           stroke-linecap="round" stroke-linejoin="round">
-        <path d="M7 1h4v4M11 1L6.5 5.5M5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h7a1 1 0 001-1V7"/>
-      </svg>
+    <div class="bottom-hint-row" id="bottom-hint-row">
+      <span class="bottom-error" id="bottom-error">Поставьте оценки по всем критериям</span>
     </div>
   </div>
 
@@ -823,11 +828,21 @@ function updateLiveScore() {
 
 function updateSubmitState() {
   const allFilled = CRITERIA.every(c => scores[c.id]);
-  const btn = document.getElementById('submit-btn');
-  btn.disabled = !allFilled;
-  if (!allFilled) {
-    btn.textContent = hasVoted ? 'Обновить оценку' : 'Опубликовать оценку';
-  }
+  const btn  = document.getElementById('submit-btn');
+  const hint = document.getElementById('bottom-hint-row');
+
+  btn.disabled    = !allFilled;
+  btn.textContent = hasVoted ? 'Обновить оценку' : 'Опубликовать оценку';
+
+  hint.innerHTML = allFilled
+    ? `<span class="bottom-system-link" onclick="openModal()">
+        Система оценки
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 1h4v4M11 1L6.5 5.5M5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h7a1 1 0 001-1V7"/>
+        </svg>
+      </span>`
+    : `<span class="bottom-error">Поставьте оценки по всем критериям</span>`;
 }
 
 // ── SEND TO SERVER ────────────────────────────────

@@ -469,7 +469,7 @@ textarea::placeholder { color: #AEAEB2; }
     <div class="header-score">
       <div class="header-score-label">Оценка</div>
       <div class="header-score-val" id="live-score">
-        —<span class="denom">/100</span>
+        —<span class="denom">/17</span>
       </div>
     </div>
   </div>
@@ -536,7 +536,7 @@ textarea::placeholder { color: #AEAEB2; }
   </div>
 
   <div class="success-score-num" id="success-score">
-    —<span class="success-denom">/100</span>
+    —<span class="success-denom">/17</span>
   </div>
   <div class="success-score-sub">Ваша оценка</div>
 
@@ -560,35 +560,34 @@ textarea::placeholder { color: #AEAEB2; }
 <div class="modal-overlay" id="system-modal" onclick="maybeCloseModal(event)">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">Система оценки 2.0</div>
+    <div class="modal-title">Система оценки MVP</div>
 
     <div class="modal-sec-title">Как считается итог</div>
     <div class="formula-rows">
       <div class="formula-row">
         <span class="formula-row-label">База = К1 (Смысл) + К2 (Удобство) + К3 (Визуал)</span>
-        <span class="formula-row-val">макс. 30</span>
+        <span class="formula-row-val">макс. 15</span>
       </div>
       <div class="formula-row">
-        <span class="formula-row-label">Если база &lt; 18 — итог равен базе</span>
+        <span class="formula-row-label">Если база &lt; 9 или любой критерий &lt; 2 — итог равен базе</span>
         <span class="formula-row-val">без ×</span>
       </div>
       <div class="formula-row">
-        <span class="formula-row-label">Если база ≥ 18 и каждый критерий ≥ 4 — включается множитель от Идеи</span>
-        <span class="formula-row-val">+ до 20%</span>
+        <span class="formula-row-label">Если база ≥ 9 и каждый критерий ≥ 2 — включается множитель от Идеи</span>
+        <span class="formula-row-val">+ до 15%</span>
       </div>
     </div>
 
     <div class="formula-highlight">
-      Итог = (База × Коэффициент идеи / 36) × 100
+      Итог = round(База × Коэффициент идеи) · от 3 до 17
     </div>
 
     <div class="modal-sec-title">Множитель «Идея / Атмосфера»</div>
     <div class="mult-list">
-      <div class="mult-row"><span class="mult-score">1–4 балла</span><span class="mult-val">× 1.00</span></div>
-      <div class="mult-row"><span class="mult-score">5–6 баллов</span><span class="mult-val">× 1.05</span></div>
-      <div class="mult-row"><span class="mult-score">7–8 баллов</span><span class="mult-val">× 1.10</span></div>
-      <div class="mult-row"><span class="mult-score">9 баллов</span><span class="mult-val">× 1.15</span></div>
-      <div class="mult-row"><span class="mult-score">10 баллов</span><span class="mult-val">× 1.20</span></div>
+      <div class="mult-row"><span class="mult-score">1–2 балла</span><span class="mult-val">× 1.00</span></div>
+      <div class="mult-row"><span class="mult-score">3 балла</span><span class="mult-val">× 1.05</span></div>
+      <div class="mult-row"><span class="mult-score">4 балла</span><span class="mult-val">× 1.10</span></div>
+      <div class="mult-row"><span class="mult-score">5 баллов</span><span class="mult-val">× 1.15</span></div>
     </div>
 
     <div class="modal-sec-title">Общий принцип</div>
@@ -597,7 +596,7 @@ textarea::placeholder { color: #AEAEB2; }
         <span class="formula-row-label">База — функциональная зрелость. Концепция усиливает систему, но не заменяет её.</span>
       </div>
       <div class="formula-row">
-        <span class="formula-row-label">Порог 18 баллов: сначала фундамент, потом характер. Идея не компенсирует слабый фундамент.</span>
+        <span class="formula-row-label">Порог 9 баллов: сначала фундамент, потом характер. Идея не компенсирует слабый фундамент.</span>
       </div>
     </div>
   </div>
@@ -626,21 +625,21 @@ const SERVICE = {
 const CRITERIA = [
   {
     id: 'content', role: 'K1',
-    name: 'Содержание / Смысл',
+    name: 'Смысл',
     tagline: 'Насколько дизайн помогает продукту выполнять его основную функцию',
     desc: 'Оцените понятность ценности продукта, поддержку ключевых сценариев и отсутствие решений «ради красоты».',
     subs: ['Ценность продукта понятна', 'Ключевые сценарии поддержаны', 'Нет решений ради красоты']
   },
   {
     id: 'usability', role: 'K2',
-    name: 'Удобство / Логика',
+    name: 'Удобство',
     tagline: 'Насколько интерфейс прост, предсказуем и комфортен в использовании',
     desc: 'Очевидность интерактивных элементов, обратная связь, состояния ошибок, навигация и группировка.',
     subs: ['Элементы очевидны', 'Навигация понятна', 'Ошибки и состояния ясны']
   },
   {
     id: 'visual', role: 'K3',
-    name: 'Визуал / Красота',
+    name: 'Визуал',
     tagline: 'Насколько визуальный дизайн помогает ориентироваться',
     desc: 'Акценты, контраст, ритм, читаемость, единые компоненты и стили, консистентность.',
     subs: ['Чёткая визуальная иерархия', 'Единые компоненты и стили', 'Контраст, ритм, качество']
@@ -723,12 +722,9 @@ function renderCriteria() {
       <div class="score-row">
         ${[1,2,3,4,5].map(n => mkBtn(c.id, n)).join('')}
       </div>
-      <div class="score-row">
-        ${[6,7,8,9,10].map(n => mkBtn(c.id, n)).join('')}
-      </div>
       <div class="score-hints">
         <span>1 — критично</span>
-        <span>10 — эталон</span>
+        <span>5 — эталон</span>
       </div>
     </div>
   `).join('');
@@ -771,17 +767,18 @@ function calcScore() {
   const idea = scores['idea']      || 0;
   const base = k1 + k2 + k3;
   if (!base) return null;
-  if (base < 18) return Math.round(base);
-  if (k1 < 4 || k2 < 4 || k3 < 4) return Math.round(base);
-  const coeff = idea >= 10 ? 1.20 : idea >= 9 ? 1.15 : idea >= 7 ? 1.10 : idea >= 5 ? 1.05 : 1.00;
-  return Math.min(100, Math.round((base * coeff / 36) * 100));
+  // No amplification if base < 9 or any base criterion < 2
+  if (base < 9 || k1 < 2 || k2 < 2 || k3 < 2) return base;
+  // Amplification by idea/atmosphere score
+  const coeff = idea >= 5 ? 1.15 : idea >= 4 ? 1.10 : idea >= 3 ? 1.05 : 1.00;
+  return Math.round(base * coeff);
 }
 
 function updateLiveScore() {
   const score = calcScore();
   const el    = document.getElementById('live-score');
   const next  = score !== null ? score : '—';
-  el.innerHTML = `${next}<span class="denom">/100</span>`;
+  el.innerHTML = `${next}<span class="denom">/17</span>`;
   el.classList.remove('bump');
   void el.offsetWidth;
   el.classList.add('bump');
@@ -856,7 +853,7 @@ async function handleSubmit() {
 
   // Show success
   document.getElementById('success-score').innerHTML =
-    `${final}<span class="success-denom">/100</span>`;
+    `${final}<span class="success-denom">/17</span>`;
   document.getElementById('page-rating').classList.remove('active');
   document.getElementById('page-success').classList.add('active');
 }
@@ -887,7 +884,7 @@ async function deleteRating() {
   document.getElementById('char-hint').textContent   = '0 / 500';
   document.getElementById('already-banner').classList.remove('show');
   document.getElementById('submit-btn').textContent  = 'Отправить';
-  document.getElementById('live-score').innerHTML    = '—<span class="denom">/100</span>';
+  document.getElementById('live-score').innerHTML    = '—<span class="denom">/17</span>';
   renderCriteria();
   updateSubmitState();
   window.scrollTo(0, 0);

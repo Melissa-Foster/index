@@ -62,7 +62,7 @@ def tg(method, data):
 
 # ── comment formatting ────────────────────────────────────────────────────────
 
-def score_bar(val, max_val=10):
+def score_bar(val, max_val=5):
     filled = round(val / max_val * 5)
     return "●" * filled + "○" * (5 - filled)
 
@@ -83,17 +83,17 @@ def format_comment(r):
         num = f"{val:>2}" if isinstance(val, int) else " —"
         return f"{label}  {score_bar(val)}  {num}"
 
-    # Labels padded to equal width (10 chars) for monospace alignment
+    # Labels padded to equal width (8 chars) for monospace alignment
     # <pre> renders in monospace in Telegram HTML mode
     criteria = "\n".join([
-        row("Содержание", "content"),
-        row("Удобство  ", "usability"),
-        row("Визуал    ", "visual"),
-        row("Идея      ", "idea"),
+        row("Смысл   ", "content"),
+        row("Удобство", "usability"),
+        row("Визуал  ", "visual"),
+        row("Идея    ", "idea"),
     ])
     lines = [
         f"👤 {mention}", "",
-        f"⭐ {final}/100", "",
+        f"⭐ {final}/17", "",
         f"<pre>{criteria}</pre>",
     ]
     if comment:
@@ -126,7 +126,7 @@ def update_average(slug):
     if votes:
         avg   = sum(votes.values()) / len(votes)
         count = len(votes)
-        text  = f"⭐ {round(avg)}/100 · {count} {_vote_word(count)}"
+        text  = f"⭐ {round(avg)}/17 · {count} {_vote_word(count)}"
     else:
         text = "·"
 

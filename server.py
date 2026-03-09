@@ -1,14 +1,14 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import json, urllib.request, os
+import json, urllib.request, urllib.parse, os, time
 
 BOT_TOKEN     = os.environ.get("BOT_TOKEN", "")
 CHANNEL_ID    = os.environ.get("CHANNEL_ID", "")
 DISCUSSION_ID = os.environ.get("DISCUSSION_ID", "")
+MINI_APP_URL  = os.environ.get("MINI_APP_URL", "https://t.me/designindexxx_bot/rate")
 API           = f"https://api.telegram.org/bot{BOT_TOKEN}"
 MAP_FILE      = "/tmp/post_map.json"
 
 # Maps channel post ID → discussion group message ID
-# Persisted to disk so it survives server restarts
 def load_map():
     if os.path.exists(MAP_FILE):
         try:
@@ -72,7 +72,6 @@ def parse_channel_post_id(post_id):
 
 def handle_telegram_update(update):
     """
-    Called when Telegram sends an update to our webhook.
     Detects auto-forwarded channel posts in the discussion group
     and stores the mapping: channel_post_id → discussion_group_message_id.
     """
@@ -82,15 +81,69 @@ def handle_telegram_update(update):
     if not msg:
         return
 
-    # Detect automatic forwards from channel to discussion group
-    # is_automatic_forward is True when Telegram auto-forwards a channel post to its linked group
     if msg.get("is_automatic_forward"):
-        channel_post_id = msg.get("forward_from_message_id")
+        channel_post_id  = msg.get("forward_from_message_id")
         discussion_msg_id = msg.get("message_id")
         if channel_post_id and discussion_msg_id:
             POST_MAP[channel_post_id] = discussion_msg_id
             save_map(POST_MAP)
             print(f"✅ Mapped channel post {channel_post_id} → discussion msg {discussion_msg_id}")
+
+def publish_post(photo, caption, parse_mode="Markdown"):
+    """
+    Publishes a photo post to the channel and immediately adds
+    the rating button. Returns the channel message_id or None.
+    """
+    # Step 1: send photo to channel (no keyboard yet — preserves comment icon)
+    send_data = {"chat_id": CHANNEL_ID, "caption": caption}
+    if parse_mode:
+        send_data["parse_mode"] = parse_mode
+
+    if photo.startswith("http"):
+        send_data["photo"] = photo
+    else:
+        send_data["photo"] = photo  # file_id
+
+    res = tg("sendPhoto", send_data)
+    if not res or not res.get("ok"):
+        print(f"sendPhoto failed: {res}")
+        return None
+
+    msg_id = res["result"]["message_id"]
+    print(f"✅ Published channel post {msg_id}")
+
+    # Step 2: add inline button with correct startapp (message_id now known)
+    button_url = f"{MINI_APP_URL}?startapp=post_001_{msg_id}"
+    tg("editMessageReplyMarkup", {
+        "chat_id": CHANNEL_ID,
+        "message_id": msg_id,
+        "reply_markup": {
+            "inline_keyboard": [[
+                {"text": "Оценить дизайн ✦", "url": button_url}
+            ]]
+        }
+    })
+    print(f"✅ Button added: {button_url}")
+    return msg_id
+
+ADMIN_FORM = """<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Publish post</title>
+<style>body{{font-family:sans-serif;max-width:600px;margin:40px auto;padding:0 20px}}
+input,textarea{{width:100%;padding:8px;margin:6px 0 14px;box-sizing:border-box}}
+button{{background:#7b2ff7;color:#fff;border:none;padding:10px 24px;cursor:pointer;border-radius:6px}}</style>
+</head><body>
+<h2>Опубликовать пост в канале</h2>
+<form method="POST" action="/publish">
+  <label>Фото (file_id или URL)</label>
+  <input name="photo" required placeholder="AgAC... или https://...">
+  <label>Подпись (поддерживает Markdown)</label>
+  <textarea name="caption" rows="5" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание..."></textarea>
+  <button type="submit">Опубликовать</button>
+</form>
+<hr>
+<h3>POST_MAP (channel_id → discussion_thread_id)</h3>
+<pre>{post_map}</pre>
+</body></html>"""
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -98,13 +151,60 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-        self.wfile.write(json.dumps({"status": "ok", "post_map": POST_MAP}).encode())
+        if self.path == "/admin":
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            html = ADMIN_FORM.format(post_map=json.dumps(POST_MAP, indent=2))
+            self.wfile.write(html.encode())
+        else:
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "ok", "post_map": POST_MAP}).encode())
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
         body   = self.rfile.read(length)
+
+        # ── Telegram webhook ──────────────────────────────────────────────────
+        if self.path == "/tg":
+            try:
+                handle_telegram_update(json.loads(body))
+            except Exception as e:
+                print("Webhook error:", e)
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"ok")
+            return
+
+        # ── Publish post (from admin form or JSON) ────────────────────────────
+        if self.path == "/publish":
+            ct = self.headers.get("Content-Type", "")
+            if "application/json" in ct:
+                try:
+                    d = json.loads(body)
+                except:
+                    self.send_response(400); self.end_headers(); return
+            else:
+                # HTML form submission (application/x-www-form-urlencoded)
+                d = dict(urllib.parse.parse_qsl(body.decode()))
+
+            photo   = d.get("photo", "").strip()
+            caption = d.get("caption", "").strip()
+            if not photo or not caption:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": "photo and caption required"}).encode())
+                return
+
+            msg_id = publish_post(photo, caption)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": bool(msg_id), "message_id": msg_id}).encode())
+            return
+
+        # ── Rating submission from mini-app ───────────────────────────────────
         try:
             data = json.loads(body)
         except:
@@ -112,31 +212,21 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        # Telegram webhook updates come to /tg
-        if self.path == "/tg":
-            handle_telegram_update(data)
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"ok")
-            return
-
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
 
-        action          = data.get("action", "new")
-        post_id         = data.get("postId", "")
-        prev_id         = data.get("prevCommentId")
-        chat_id         = DISCUSSION_ID if DISCUSSION_ID else CHANNEL_ID
+        action   = data.get("action", "new")
+        post_id  = data.get("postId", "")
+        prev_id  = data.get("prevCommentId")
+        chat_id  = DISCUSSION_ID if DISCUSSION_ID else CHANNEL_ID
 
-        # startapp param contains channel post ID (e.g. "post_001_15" → 15)
-        channel_post_id = parse_channel_post_id(post_id)
-
-        # Look up the discussion group thread ID automatically
+        channel_post_id      = parse_channel_post_id(post_id)
         discussion_thread_id = POST_MAP.get(channel_post_id) if channel_post_id else None
 
-        print(f"action={action} post_id={post_id} channel_post_id={channel_post_id} discussion_thread_id={discussion_thread_id} POST_MAP={POST_MAP}")
+        print(f"action={action} post_id={post_id} channel_post_id={channel_post_id} "
+              f"discussion_thread_id={discussion_thread_id} POST_MAP={POST_MAP}")
 
         if action == "delete" and prev_id:
             tg("deleteMessage", {"chat_id": chat_id, "message_id": prev_id})
@@ -152,13 +242,11 @@ class Handler(BaseHTTPRequestHandler):
                 "text": text
             })
         else:
-            payload = {
-                "chat_id": chat_id,
-                "text": text,
-                "allow_sending_without_reply": True
-            }
+            payload = {"chat_id": chat_id, "text": text}
             if discussion_thread_id:
-                # reply_to_message_id links the comment to the channel post thread
+                # message_thread_id posts into the channel post's discussion thread
+                # reply_to_message_id is also set so the comment quotes the post
+                payload["message_thread_id"] = discussion_thread_id
                 payload["reply_to_message_id"] = discussion_thread_id
             res = tg("sendMessage", payload)
 
@@ -176,7 +264,6 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"Server running on port {port}")
-    # Register webhook with Telegram so we receive group updates
     server_url = os.environ.get("SERVER_URL", "")
     if server_url:
         result = tg("setWebhook", {

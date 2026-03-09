@@ -91,12 +91,28 @@ html, body {
 /* Info block */
 .header-info { flex: 1; min-width: 0; }
 
+.header-name {
+  font-size: 24px;
+  font-weight: 500;
+  color: #1C1C1E;
+  line-height: 1.05;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: font-size 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.header.collapsed .header-name {
+  font-size: 18px;
+  margin-bottom: 0;
+}
+
 .header-subtitle {
   font-size: 13px;
   color: #7B4FFF;
   font-weight: 500;
   line-height: 1.2;
-  margin-bottom: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -111,22 +127,6 @@ html, body {
 .header.collapsed .header-subtitle {
   max-height: 0;
   opacity: 0;
-  margin-bottom: 0;
-}
-
-.header-name {
-  font-size: 26px;
-  font-weight: 500;
-  color: #1C1C1E;
-  line-height: 1.05;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: font-size 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.header.collapsed .header-name {
-  font-size: 19px;
 }
 
 /* Score block (right) */
@@ -135,12 +135,27 @@ html, body {
   flex-shrink: 0;
 }
 
+.header-score-val {
+  font-size: 26px;
+  font-weight: 500;
+  color: #7B4FFF;
+  line-height: 1;
+  margin-bottom: 2px;
+  transition:
+    font-size 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.header.collapsed .header-score-val {
+  font-size: 20px;
+  margin-bottom: 0;
+}
+
 .header-score-label {
   font-size: 12px;
   color: #AEAEB2;
   font-weight: 400;      /* Normal — gray */
   line-height: 1.2;
-  margin-bottom: 2px;
   max-height: 18px;
   opacity: 1;
   transition:
@@ -152,21 +167,6 @@ html, body {
 .header.collapsed .header-score-label {
   max-height: 0;
   opacity: 0;
-  margin-bottom: 0;
-}
-
-.header-score-val {
-  font-size: 28px;
-  font-weight: 500;
-  color: #7B4FFF;
-  line-height: 1;
-  transition:
-    font-size 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.header.collapsed .header-score-val {
-  font-size: 20px;
 }
 
 .header-score-val .denom {
@@ -203,11 +203,11 @@ html, body {
 }
 
 .crit-name {
-  font-size: 26px;
+  font-size: 18px;
   font-weight: 500;
   color: #1C1C1E;
-  line-height: 1.1;
-  margin-bottom: 6px;
+  line-height: 1.2;
+  margin-bottom: 5px;
 }
 
 .crit-desc {
@@ -215,15 +215,15 @@ html, body {
   font-weight: 400;      /* Normal — gray */
   color: #636366;
   line-height: 1.45;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
 .crit-hint {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 400;      /* Normal — gray */
-  color: #AEAEB2;
-  line-height: 1.4;
-  margin-bottom: 18px;
+  color: #636366;
+  line-height: 1.45;
+  margin-bottom: 16px;
 }
 
 /* ── SCORE BUTTONS ───────────────────────────────── */
@@ -234,7 +234,7 @@ html, body {
 }
 
 .score-btn {
-  height: 52px;
+  height: 46px;
   border-radius: 14px;
   border: none;
   background: #EDE8FF;
@@ -311,7 +311,7 @@ textarea::placeholder {
 
 .submit-btn {
   width: 100%;
-  background: #7B4FFF;
+  background: #1C1C1E;
   color: #fff; border: none;
   border-radius: 18px;
   padding: 17px;
@@ -524,14 +524,14 @@ textarea::placeholder {
       <div class="header-thumb-placeholder" id="header-thumb-inner">✦</div>
     </div>
     <div class="header-info">
-      <div class="header-subtitle" id="header-subtitle">Сайт, релиз 2026</div>
       <div class="header-name" id="header-name">Название</div>
+      <div class="header-subtitle" id="header-subtitle">Сайт, релиз 2026</div>
     </div>
     <div class="header-score">
-      <div class="header-score-label">Оценка</div>
       <div class="header-score-val" id="live-score">
         —<span class="denom">/17</span>
       </div>
+      <div class="header-score-label">Оценка</div>
     </div>
   </div>
 
@@ -553,7 +553,7 @@ textarea::placeholder {
         <div class="comment-username" id="user-name">Аноним</div>
       </div>
       <textarea id="comment-input"
-        placeholder="Текст рецензии"
+        placeholder="Поделитесь мнением о дизайне..."
         maxlength="500" rows="4"
         oninput="onCommentInput(this)"></textarea>
       <div class="char-hint" id="char-hint">0 / 500</div>
@@ -677,26 +677,26 @@ const CRITERIA = [
   {
     id: 'content', role: 'K1',
     name: 'Смысл',
-    desc: 'Насколько дизайн раскрывает смысл продукта и помогает ему работать',
-    hint: '1 — непонятно, 5 — всё очевидно'
+    desc: 'Насколько дизайн помогает решать задачу продукта.',
+    hint: '1 — мешает, 5 — помогает идеально'
   },
   {
     id: 'usability', role: 'K2',
     name: 'Удобство',
-    desc: 'Насколько интерфейс прост, предсказуем и комфортен в использовании',
-    hint: '1 — мешает, 5 — помогает идеально'
+    desc: 'Насколько интерфейс простой и понятный.',
+    hint: '1 — запутанный, 5 — интуитивный'
   },
   {
     id: 'visual', role: 'K3',
     name: 'Визуал',
-    desc: 'Насколько оформление помогает ориентироваться и считывать иерархию',
-    hint: '1 — отвлекает, 5 — усиливает'
+    desc: 'Насколько дизайн аккуратный и системный.',
+    hint: '1 — хаотичный, 5 — системный'
   },
   {
     id: 'idea', role: 'Идея',
-    name: 'Идея / Атмосфера',
-    desc: 'Есть ли осмысленная дизайн-идея, характер и атмосфера продукта',
-    hint: '1 — не считывается, 5 — запоминается'
+    name: 'Идея',
+    desc: 'Насколько сильна визуальная метафора в дизайне.',
+    hint: '1 — нет метафоры, 5 — сильная метафора'
   }
 ];
 

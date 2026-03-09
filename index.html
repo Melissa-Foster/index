@@ -423,55 +423,77 @@ textarea::placeholder {
 .modal-sheet {
   width: 100%; background: #fff;
   border-radius: 24px 24px 0 0;
-  padding: 12px 20px calc(28px + env(safe-area-inset-bottom, 20px));
-  max-height: 80vh; overflow-y: auto;
+  padding: 24px 20px calc(36px + env(safe-area-inset-bottom, 20px));
+  max-height: 88vh; overflow-y: auto;
   transform: translateY(100%);
   transition: transform 0.34s cubic-bezier(0.32,0.72,0,1);
 }
 .modal-overlay.open .modal-sheet { transform: translateY(0); }
 
-.modal-handle {
-  width: 36px; height: 4px; border-radius: 100px;
-  background: #DDDDE0; margin: 0 auto 20px;
+/* Header row: title + × */
+.modal-header {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 28px;
 }
-
 .modal-title {
-  font-size: 19px; font-weight: 500; margin-bottom: 18px;
+  font-size: 22px; font-weight: 500; color: #1C1C1E;
+}
+.modal-close {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: #F2F2F7; border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  font-size: 15px; color: #636366;
+  transition: opacity 0.15s;
+}
+.modal-close:active { opacity: 0.55; }
+
+/* Numbered section headings */
+.modal-sec {
+  margin-bottom: 28px;
+}
+.modal-sec-heading {
+  font-size: 20px; font-weight: 500; color: #1C1C1E;
+  margin-bottom: 12px;
 }
 
-.modal-sec-title {
-  font-size: 11px; font-weight: 400; color: #AEAEB2;
-  text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 9px;
+/* Body paragraph */
+.modal-p {
+  font-size: 15px; font-weight: 400; color: #1C1C1E;
+  line-height: 1.5; margin-bottom: 8px;
 }
+.modal-p:last-child { margin-bottom: 0; }
 
-.formula-rows {
-  background: #F7F7F8; border-radius: 16px;
-  padding: 4px 16px; margin-bottom: 12px;
-}
-
-.formula-row {
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-  padding: 11px 0; border-bottom: 1px solid #EBEBEB; font-size: 14px;
-}
-.formula-row:last-child { border-bottom: none; }
-.formula-row-label { color: #636366; flex: 1; line-height: 1.4; font-weight: 400; }
-.formula-row-val { font-weight: 500; color: #1C1C1E; white-space: nowrap; }
-
-.formula-highlight {
+/* Purple formula box */
+.modal-formula {
   background: #EDE8FF; border-radius: 14px;
-  padding: 13px 16px; margin-bottom: 20px;
-  font-size: 14px; color: #7B4FFF; font-weight: 500;
-  text-align: center; line-height: 1.55;
+  padding: 15px 16px; margin-top: 14px;
+  font-size: 15px; color: #7B4FFF; font-weight: 500;
+  text-align: center;
 }
 
-.mult-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
-
+/* Multiplier table */
+.mult-table-label {
+  font-size: 13px; font-weight: 400; color: #AEAEB2;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #F0F0F0;
+  margin-top: 14px;
+}
 .mult-row {
   display: flex; align-items: center; justify-content: space-between;
-  background: #F7F7F8; border-radius: 12px; padding: 10px 14px; font-size: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid #F0F0F0;
+  font-size: 15px;
 }
-.mult-score { color: #636366; font-weight: 400; }
+.mult-row:last-child { border-bottom: none; }
+.mult-score { color: #1C1C1E; font-weight: 400; }
 .mult-val { font-weight: 500; color: #7B4FFF; }
+
+/* Note under last formula */
+.modal-note {
+  font-size: 13px; font-weight: 400; color: #AEAEB2;
+  margin-top: 10px;
+}
 
 </style>
 </head>
@@ -560,46 +582,42 @@ textarea::placeholder {
 ══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="system-modal" onclick="maybeCloseModal(event)">
   <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Система оценки MVP</div>
 
-    <div class="modal-sec-title">Как считается итог</div>
-    <div class="formula-rows">
-      <div class="formula-row">
-        <span class="formula-row-label">База = К1 (Смысл) + К2 (Удобство) + К3 (Визуал)</span>
-        <span class="formula-row-val">макс. 15</span>
-      </div>
-      <div class="formula-row">
-        <span class="formula-row-label">Если база &lt; 9 или любой критерий &lt; 2 — итог равен базе</span>
-        <span class="formula-row-val">без ×</span>
-      </div>
-      <div class="formula-row">
-        <span class="formula-row-label">Если база ≥ 9 и каждый критерий ≥ 2 — включается множитель от Идеи</span>
-        <span class="formula-row-val">+ до 15%</span>
-      </div>
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="modal-title">Система оценки</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
 
-    <div class="formula-highlight">
-      Итог = round(База × Коэффициент идеи) · диапазон 3–17
+    <!-- 1. Оценка базы -->
+    <div class="modal-sec">
+      <div class="modal-sec-heading">1. Оценка базы</div>
+      <p class="modal-p">База — функциональная зрелость дизайна: сумма критериев Смысл, Удобство и Визуал. Каждый критерий — от 1 до 5 баллов.</p>
+      <p class="modal-p">База: от 3 до 15 баллов</p>
+      <div class="modal-formula">База = Смысл + Удобство + Визуал</div>
     </div>
 
-    <div class="modal-sec-title">Множитель «Идея / Атмосфера»</div>
-    <div class="mult-list">
-      <div class="mult-row"><span class="mult-score">1–2 балла</span><span class="mult-val">× 1.00</span></div>
+    <!-- 2. Оценка идеи -->
+    <div class="modal-sec">
+      <div class="modal-sec-heading">2. Оценка идеи</div>
+      <p class="modal-p">Если База &lt; 9 или хотя бы один критерий &lt; 2, то идея не влияет на итоговую оценку. Идея не может компенсировать слабый фундамент дизайна</p>
+      <p class="modal-p">Если база ≥ 9 и каждый критерий ≥ 2, то итог усиливается за счёт идеи</p>
+      <p class="modal-p">Идея: от 1 до 5 баллов</p>
+      <div class="mult-table-label">Оценка идеи и коэффициент</div>
+      <div class="mult-row"><span class="mult-score">1-2 балла</span><span class="mult-val">× 1.00</span></div>
       <div class="mult-row"><span class="mult-score">3 балла</span><span class="mult-val">× 1.05</span></div>
       <div class="mult-row"><span class="mult-score">4 балла</span><span class="mult-val">× 1.10</span></div>
       <div class="mult-row"><span class="mult-score">5 баллов</span><span class="mult-val">× 1.15</span></div>
     </div>
 
-    <div class="modal-sec-title">Общий принцип</div>
-    <div class="formula-rows">
-      <div class="formula-row">
-        <span class="formula-row-label">База — функциональная зрелость: смысл, удобство, визуал. Это фундамент оценки.</span>
-      </div>
-      <div class="formula-row">
-        <span class="formula-row-label">Порог 9 баллов: сначала фундамент, потом характер. Идея не компенсирует слабый фундамент.</span>
-      </div>
+    <!-- 3. Итоговая оценка -->
+    <div class="modal-sec">
+      <div class="modal-sec-heading">3. Итоговая оценка</div>
+      <p class="modal-p">Итог: от 3 до 17 баллов</p>
+      <div class="modal-formula">Итог = round (База × коэффициент идеи)</div>
+      <div class="modal-note">round — округление до целого</div>
     </div>
+
   </div>
 </div>
 
@@ -897,10 +915,10 @@ async function deleteRating() {
 function closeMiniApp() { if (tg) tg.close(); }
 
 // ── MODAL ─────────────────────────────────────────
-function openModal() { document.getElementById('system-modal').classList.add('open'); }
+function openModal()  { document.getElementById('system-modal').classList.add('open'); }
+function closeModal() { document.getElementById('system-modal').classList.remove('open'); }
 function maybeCloseModal(e) {
-  if (e.target === document.getElementById('system-modal'))
-    document.getElementById('system-modal').classList.remove('open');
+  if (e.target === document.getElementById('system-modal')) closeModal();
 }
 
 init();

@@ -132,31 +132,39 @@ def handle_telegram_update(update):
 
 def publish_post(photo, caption, slug, parse_mode="Markdown"):
     """
-    Publish a photo post to the channel in ONE API call — button is included
-    from the start so editMessageReplyMarkup is never called (which would break
-    the comment thread linkage).
+    Publish a photo post (NO button) so the comment section stays visible,
+    then send the rating button as a SEPARATE message right after.
+    SLUG_MAP maps slug → photo message ID (the commentable post).
     """
-    button_url = f"{MINI_APP_URL}?startapp={slug}"
+    # Step 1: publish photo with no inline keyboard
     res = tg("sendPhoto", {
-        "chat_id":      CHANNEL_ID,
-        "photo":        photo,
-        "caption":      caption,
-        "parse_mode":   parse_mode,
+        "chat_id":    CHANNEL_ID,
+        "photo":      photo,
+        "caption":    caption,
+        "parse_mode": parse_mode,
+    })
+    if not res or not res.get("ok"):
+        print(f"sendPhoto failed: {res}")
+        return None
+
+    photo_msg_id = res["result"]["message_id"]
+    SLUG_MAP[slug] = photo_msg_id
+    save_slug_map(SLUG_MAP)
+
+    # Step 2: send rating button as a separate channel message
+    button_url = f"{MINI_APP_URL}?startapp={slug}"
+    tg("sendMessage", {
+        "chat_id": CHANNEL_ID,
+        "text":    "Оценить дизайн ✦",
         "reply_markup": {
             "inline_keyboard": [[
                 {"text": "Оценить дизайн ✦", "url": button_url}
             ]]
         }
     })
-    if not res or not res.get("ok"):
-        print(f"sendPhoto failed: {res}")
-        return None
 
-    msg_id = res["result"]["message_id"]
-    SLUG_MAP[slug] = msg_id
-    save_slug_map(SLUG_MAP)
-    print(f"✅ Published post slug={slug} channel_msg_id={msg_id} button={button_url}")
-    return msg_id
+    print(f"✅ Published post slug={slug} channel_msg_id={photo_msg_id} button={button_url}")
+    return photo_msg_id
 
 # ── admin HTML form ───────────────────────────────────────────────────────────
 

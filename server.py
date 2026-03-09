@@ -5,10 +5,24 @@ BOT_TOKEN     = os.environ.get("BOT_TOKEN", "")
 CHANNEL_ID    = os.environ.get("CHANNEL_ID", "")
 DISCUSSION_ID = os.environ.get("DISCUSSION_ID", "")
 API           = f"https://api.telegram.org/bot{BOT_TOKEN}"
+MAP_FILE      = "/tmp/post_map.json"
 
-# Maps channel post ID → discussion group thread ID
-# Populated automatically when Telegram forwards posts to the discussion group
-POST_MAP = {}
+# Maps channel post ID → discussion group message ID
+# Persisted to disk so it survives server restarts
+def load_map():
+    if os.path.exists(MAP_FILE):
+        try:
+            with open(MAP_FILE) as f:
+                return {int(k): v for k, v in json.load(f).items()}
+        except:
+            pass
+    return {}
+
+def save_map(m):
+    with open(MAP_FILE, "w") as f:
+        json.dump(m, f)
+
+POST_MAP = load_map()
 
 def tg(method, data):
     req = urllib.request.Request(
@@ -75,6 +89,7 @@ def handle_telegram_update(update):
         discussion_msg_id = msg.get("message_id")
         if channel_post_id and discussion_msg_id:
             POST_MAP[channel_post_id] = discussion_msg_id
+            save_map(POST_MAP)
             print(f"✅ Mapped channel post {channel_post_id} → discussion msg {discussion_msg_id}")
 
 class Handler(BaseHTTPRequestHandler):
@@ -83,8 +98,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.send_response(200)
+        self.send_header("Content-Type", "application/json")
         self.end_headers()
-        self.wfile.write(b"index rating server ok")
+        self.wfile.write(json.dumps({"status": "ok", "post_map": POST_MAP}).encode())
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))

@@ -60,19 +60,22 @@ def handle_telegram_update(update):
     """
     Called when Telegram sends an update to our webhook.
     Detects auto-forwarded channel posts in the discussion group
-    and stores the mapping: channel_post_id → discussion_thread_id.
+    and stores the mapping: channel_post_id → discussion_group_message_id.
     """
-    msg = update.get("message") or update.get("channel_post")
+    print(f"TG update received: {json.dumps(update)[:500]}")
+
+    msg = update.get("message")
     if not msg:
         return
 
     # Detect automatic forwards from channel to discussion group
-    if msg.get("is_automatic_forward") and msg.get("forward_from_chat"):
+    # is_automatic_forward is True when Telegram auto-forwards a channel post to its linked group
+    if msg.get("is_automatic_forward"):
         channel_post_id = msg.get("forward_from_message_id")
-        discussion_thread_id = msg.get("message_id")
-        if channel_post_id and discussion_thread_id:
-            POST_MAP[channel_post_id] = discussion_thread_id
-            print(f"Mapped channel post {channel_post_id} → discussion thread {discussion_thread_id}")
+        discussion_msg_id = msg.get("message_id")
+        if channel_post_id and discussion_msg_id:
+            POST_MAP[channel_post_id] = discussion_msg_id
+            print(f"✅ Mapped channel post {channel_post_id} → discussion msg {discussion_msg_id}")
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -133,9 +136,14 @@ class Handler(BaseHTTPRequestHandler):
                 "text": text
             })
         else:
-            payload = {"chat_id": chat_id, "text": text}
+            payload = {
+                "chat_id": chat_id,
+                "text": text,
+                "allow_sending_without_reply": True
+            }
             if discussion_thread_id:
-                payload["message_thread_id"] = discussion_thread_id
+                # reply_to_message_id links the comment to the channel post thread
+                payload["reply_to_message_id"] = discussion_thread_id
             res = tg("sendMessage", payload)
 
         comment_msg_id = res.get("result", {}).get("message_id") if res else None
@@ -155,6 +163,9 @@ if __name__ == "__main__":
     # Register webhook with Telegram so we receive group updates
     server_url = os.environ.get("SERVER_URL", "")
     if server_url:
-        result = tg("setWebhook", {"url": f"{server_url}/tg"})
+        result = tg("setWebhook", {
+            "url": f"{server_url}/tg",
+            "allowed_updates": ["message", "channel_post"]
+        })
         print(f"Webhook set: {result}")
     HTTPServer(("0.0.0.0", port), Handler).serve_forever()

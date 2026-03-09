@@ -113,7 +113,7 @@ def update_average(slug):
         count = len(votes)
         text  = f"⭐ {round(avg)}/100 · {count} {_vote_word(count)}"
     else:
-        text = "\u200b"
+        text = "·"
 
     tg("editMessageText", {
         "chat_id":      CHANNEL_ID,
@@ -193,7 +193,7 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
     button_url = f"{MINI_APP_URL}?startapp={slug}"
     res2 = tg("sendMessage", {
         "chat_id": CHANNEL_ID,
-        "text":    "\u200b",  # zero-width space — invisible until first vote
+        "text":    "·",  # zero-width space — invisible until first vote
         "reply_markup": {
             "inline_keyboard": [[{"text": button_text, "url": button_url}]]
         }

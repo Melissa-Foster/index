@@ -99,9 +99,10 @@ class Handler(BaseHTTPRequestHandler):
                 "text": text
             })
         else:
-            payload = {"chat_id": chat_id, "text": text}
             if discussion_msg_id:
-                payload["reply_to_message_id"] = discussion_msg_id
+                payload = {"chat_id": chat_id, "text": text, "message_thread_id": discussion_msg_id}
+            else:
+                payload = {"chat_id": chat_id, "text": text}
             res = tg("sendMessage", payload)
 
         comment_msg_id = res.get("result", {}).get("message_id") if res else None

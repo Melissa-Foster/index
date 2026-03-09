@@ -177,18 +177,9 @@ html, body {
 
 .header-score-val.bump { transform: scale(1.15); }
 
-/* ── ALREADY BANNER ──────────────────────────────── */
-.already-banner {
-  display: none; align-items: center; gap: 10px;
-  background: #EDE8FF; border-radius: 14px;
-  padding: 12px 16px; margin: 16px 20px 0;
-  font-size: 13px; color: #7B4FFF; font-weight: 500; line-height: 1.5;
-}
-.already-banner.show { display: flex; }
-
 /* ── SCROLL BODY ─────────────────────────────────── */
 .body {
-  padding: 0 20px calc(110px + env(safe-area-inset-bottom, 20px));
+  padding: 0 20px calc(165px + env(safe-area-inset-bottom, 20px));
 }
 
 /* ── CRITERIA BLOCK ──────────────────────────────── */
@@ -341,6 +332,21 @@ textarea::placeholder {
 .bottom-error {
   font-size: 13px; color: #FF3B30; font-weight: 400;
 }
+
+.delete-inline-btn {
+  display: none;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 18px;
+  padding: 14px;
+  font-family: 'TTCommons', sans-serif;
+  font-size: 17px; font-weight: 500; color: #1C1C1E;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.delete-inline-btn:active { transform: scale(0.98); opacity: 0.65; }
 
 /* ── SUCCESS PAGE ────────────────────────────────── */
 #page-success {
@@ -544,12 +550,6 @@ textarea::placeholder {
     </div>
   </div>
 
-  <!-- ALREADY VOTED -->
-  <div class="already-banner" id="already-banner">
-    <span>✏️</span>
-    <span>Вы уже голосовали. Можно изменить или удалить оценку.</span>
-  </div>
-
   <!-- BODY -->
   <div class="body">
 
@@ -574,8 +574,11 @@ textarea::placeholder {
     <button class="submit-btn" id="submit-btn" disabled onclick="handleSubmit()">
       Опубликовать оценку
     </button>
+    <button class="delete-inline-btn" id="delete-inline-btn" onclick="deleteRating()">
+      Удалить
+    </button>
     <div class="bottom-hint-row" id="bottom-hint-row">
-      <span class="bottom-error" id="bottom-error">Поставьте оценки по всем критериям</span>
+      <span class="bottom-error">Поставьте оценки по всем критериям</span>
     </div>
   </div>
 
@@ -755,8 +758,6 @@ function init() {
     comment  = r.comment || '';
     hasVoted = true;
     document.getElementById('comment-input').value = comment;
-    document.getElementById('already-banner').classList.add('show');
-    document.getElementById('submit-btn').textContent = 'Обновить оценку';
   }
 
   renderCriteria();
@@ -823,23 +824,35 @@ function updateLiveScore() {
   setTimeout(() => el.classList.remove('bump'), 320);
 }
 
+const SYSTEM_LINK_HTML = `<span class="bottom-system-link" onclick="openModal()">
+    Система оценки
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 1h4v4M11 1L6.5 5.5M5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h7a1 1 0 001-1V7"/>
+    </svg>
+  </span>`;
+
 function updateSubmitState() {
   const allFilled = CRITERIA.every(c => scores[c.id]);
-  const btn  = document.getElementById('submit-btn');
-  const hint = document.getElementById('bottom-hint-row');
+  const btn       = document.getElementById('submit-btn');
+  const hint      = document.getElementById('bottom-hint-row');
+  const deleteBtn = document.getElementById('delete-inline-btn');
 
-  btn.disabled    = !allFilled;
-  btn.textContent = hasVoted ? 'Обновить оценку' : 'Опубликовать оценку';
-
-  hint.innerHTML = allFilled
-    ? `<span class="bottom-system-link" onclick="openModal()">
-        Система оценки
-        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round">
-          <path d="M7 1h4v4M11 1L6.5 5.5M5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h7a1 1 0 001-1V7"/>
-        </svg>
-      </span>`
-    : `<span class="bottom-error">Поставьте оценки по всем критериям</span>`;
+  if (hasVoted) {
+    // Edit mode: button always enabled, delete visible, system link always shown
+    btn.disabled             = false;
+    btn.textContent          = 'Обновить оценку';
+    deleteBtn.style.display  = 'block';
+    hint.innerHTML           = SYSTEM_LINK_HTML;
+  } else {
+    // New rating: button enabled only when all criteria filled, no delete
+    btn.disabled             = !allFilled;
+    btn.textContent          = 'Опубликовать оценку';
+    deleteBtn.style.display  = 'none';
+    hint.innerHTML           = allFilled
+      ? SYSTEM_LINK_HTML
+      : `<span class="bottom-error">Поставьте оценки по всем критериям</span>`;
+  }
 }
 
 // ── SEND TO SERVER ────────────────────────────────
@@ -912,9 +925,7 @@ async function deleteRating() {
   document.getElementById('page-success').classList.remove('active');
   document.getElementById('page-rating').classList.add('active');
   document.getElementById('comment-input').value = '';
-  document.getElementById('already-banner').classList.remove('show');
-  document.getElementById('submit-btn').textContent = 'Опубликовать оценку';
-  document.getElementById('live-score').innerHTML   = '—<span class="denom">/17</span>';
+  document.getElementById('live-score').innerHTML = '—<span class="denom">/17</span>';
   renderCriteria();
   updateSubmitState();
   window.scrollTo(0, 0);

@@ -54,6 +54,10 @@ def tg(method, data):
             return json.loads(r.read())
     except Exception as e:
         print("TG error:", e)
+        try:
+            print("TG error body:", e.read().decode())
+        except Exception:
+            pass
         return None
 
 # ── comment formatting ────────────────────────────────────────────────────────
@@ -284,14 +288,14 @@ class Handler(BaseHTTPRequestHandler):
         else:
             payload = {"chat_id": chat_id, "text": text}
             if discussion_thread_id:
-                # Both params: message_thread_id for thread routing,
-                # reply_to_message_id so the comment visually quotes the post
-                payload["message_thread_id"]      = discussion_thread_id
-                payload["reply_to_message_id"]    = discussion_thread_id
+                # reply_to_message_id makes the comment appear under the channel post.
+                # message_thread_id is only for forum supergroups — do NOT use it here.
+                payload["reply_to_message_id"]         = discussion_thread_id
                 payload["allow_sending_without_reply"] = True
             res = tg("sendMessage", payload)
 
         comment_msg_id = res.get("result", {}).get("message_id") if res else None
+        print(f"TG sendMessage result: {res}")
         print(f"Result: comment_id={comment_msg_id}")
         self.wfile.write(json.dumps({"ok": True, "commentId": comment_msg_id}).encode())
 

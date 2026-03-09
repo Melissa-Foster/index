@@ -66,23 +66,39 @@ def score_bar(val, max_val=10):
     filled = round(val / max_val * 5)
     return "●" * filled + "○" * (5 - filled)
 
+def _esc(text):
+    """Escape Markdown v1 special chars in user-provided text."""
+    for ch in ('*', '_', '`', '['):
+        text = str(text).replace(ch, '\\' + ch)
+    return text
+
 def format_comment(r):
     s        = r.get("scores", {})
     username = r.get("username")
     name     = r.get("name", "Аноним")
     final    = r.get("final", 0)
     comment  = r.get("comment", "").strip()
-    mention  = f"@{username}" if username else name
+    mention  = f"@{_esc(username)}" if username else _esc(name)
+
+    def row(label, key):
+        val = s.get(key, 0)
+        num = f"{val:>2}" if isinstance(val, int) else " —"
+        return f"{label}  {score_bar(val)}  {num}"
+
+    # Labels padded to equal width (10 chars) for monospace alignment
+    criteria = "\n".join([
+        row("Содержание", "content"),
+        row("Удобство  ", "usability"),
+        row("Визуал    ", "visual"),
+        row("Идея      ", "idea"),
+    ])
     lines = [
         f"👤 {mention}", "",
         f"⭐ {final}/100", "",
-        f"Содержание   {score_bar(s.get('content',0))}  {s.get('content','—')}",
-        f"Удобство       {score_bar(s.get('usability',0))}  {s.get('usability','—')}",
-        f"Визуал           {score_bar(s.get('visual',0))}  {s.get('visual','—')}",
-        f"Идея              {score_bar(s.get('idea',0))}  {s.get('idea','—')}",
+        f"```\n{criteria}\n```",
     ]
     if comment:
-        lines += ["", f"💬 {comment}"]
+        lines += ["", f"💬 {_esc(comment)}"]
     return "\n".join(lines)
 
 # ── average score ─────────────────────────────────────────────────────────────
@@ -355,15 +371,17 @@ class Handler(BaseHTTPRequestHandler):
                 "chat_id":    chat_id,
                 "message_id": existing_comment_id,
                 "text":       text,
+                "parse_mode": "Markdown",
             })
         elif action == "update" and prev_id:
             res = tg("editMessageText", {
                 "chat_id":    chat_id,
                 "message_id": prev_id,
                 "text":       text,
+                "parse_mode": "Markdown",
             })
         else:
-            payload = {"chat_id": chat_id, "text": text}
+            payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
             if discussion_thread_id:
                 payload["reply_to_message_id"]         = discussion_thread_id
                 payload["allow_sending_without_reply"] = True

@@ -60,7 +60,7 @@ html, body {
 .header-thumb {
   width: 56px;
   height: 56px;
-  border-radius: 12px;
+  border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
   background: linear-gradient(135deg, #EDE8FF, #D4C6FF);
@@ -133,7 +133,9 @@ html, body {
 .header-score {
   text-align: right;
   flex-shrink: 0;
+  transition: opacity 0.22s ease;
 }
+.header-score.hidden { opacity: 0; pointer-events: none; }
 
 .header-score-val {
   font-size: 26px;
@@ -511,10 +513,10 @@ textarea::placeholder {
       <div class="header-thumb-placeholder" id="header-thumb-inner">✦</div>
     </div>
     <div class="header-info">
-      <div class="header-name" id="header-name">Название</div>
-      <div class="header-subtitle" id="header-subtitle">Сайт, релиз 2026</div>
+      <div class="header-name" id="header-name"></div>
+      <div class="header-subtitle" id="header-subtitle"></div>
     </div>
-    <div class="header-score">
+    <div class="header-score hidden" id="header-score">
       <div class="header-score-val" id="live-score">
         —<span class="denom">/17</span>
       </div>
@@ -664,9 +666,10 @@ const CRITERIA = [
 
 // ── STATE ────────────────────────────────────────
 const STORAGE_KEY = 'vote_' + POST_ID;
-let scores   = {};
-let comment  = '';
-let hasVoted = false;
+let scores          = {};
+let comment         = '';
+let hasVoted        = false;
+let attemptedSubmit = false;
 
 // ── FETCH POST METADATA FROM SERVER ─────────────
 async function fetchPostData() {
@@ -788,25 +791,29 @@ const SYSTEM_LINK_HTML = `<span class="bottom-system-link" onclick="openModal()"
   </span>`;
 
 function updateSubmitState() {
-  const allFilled = CRITERIA.every(c => scores[c.id]);
-  const btn       = document.getElementById('submit-btn');
-  const hint      = document.getElementById('bottom-hint-row');
-  const deleteBtn = document.getElementById('delete-inline-btn');
+  const allFilled  = CRITERIA.every(c => scores[c.id]);
+  const anyFilled  = CRITERIA.some(c => scores[c.id]);
+  const btn        = document.getElementById('submit-btn');
+  const hint       = document.getElementById('bottom-hint-row');
+  const deleteBtn  = document.getElementById('delete-inline-btn');
+  const headerScore = document.getElementById('header-score');
+
+  // Show score slot only once any criterion is picked (or in edit mode)
+  headerScore.classList.toggle('hidden', !anyFilled && !hasVoted);
 
   if (hasVoted) {
-    // Edit mode: button always enabled, delete visible, system link always shown
-    btn.disabled             = false;
-    btn.textContent          = 'Обновить оценку';
-    deleteBtn.style.display  = 'block';
-    hint.innerHTML           = SYSTEM_LINK_HTML;
+    btn.disabled            = false;
+    btn.textContent         = 'Обновить оценку';
+    deleteBtn.style.display = 'block';
+    hint.innerHTML          = SYSTEM_LINK_HTML;
   } else {
-    // New rating: button enabled only when all criteria filled, no delete
-    btn.disabled             = !allFilled;
-    btn.textContent          = 'Опубликовать оценку';
-    deleteBtn.style.display  = 'none';
-    hint.innerHTML           = allFilled
-      ? SYSTEM_LINK_HTML
-      : `<span class="bottom-error">Поставьте оценки по всем критериям</span>`;
+    // Button always enabled — error shown only after a failed submit attempt
+    btn.disabled            = false;
+    btn.textContent         = 'Опубликовать оценку';
+    deleteBtn.style.display = 'none';
+    hint.innerHTML = (attemptedSubmit && !allFilled)
+      ? `<span class="bottom-error">Поставьте оценки по всем критериям</span>`
+      : SYSTEM_LINK_HTML;
   }
 }
 
@@ -849,8 +856,16 @@ function showSuccessScore(target) {
 
 // ── SUBMIT ────────────────────────────────────────
 async function handleSubmit() {
+  const allFilled = CRITERIA.every(c => scores[c.id]);
+  if (!allFilled) {
+    attemptedSubmit = true;
+    updateSubmitState();
+    hapticNotif('error');   // вибро-ошибка
+    return;
+  }
   const final = calcScore();
   if (!final) return;
+  attemptedSubmit = false;
   hapticNotif('success');
 
   const user = tg?.initDataUnsafe?.user;
@@ -910,7 +925,7 @@ async function deleteRating() {
   });
 
   localStorage.removeItem(STORAGE_KEY);
-  hasVoted = false; scores = {}; comment = '';
+  hasVoted = false; scores = {}; comment = ''; attemptedSubmit = false;
 
   document.getElementById('page-success').classList.remove('active');
   document.getElementById('page-rating').classList.add('active');

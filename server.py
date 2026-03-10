@@ -1,5 +1,5 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import json, urllib.request, urllib.parse, os
+import json, urllib.request, urllib.parse, os, cgi, io
 
 BOT_TOKEN     = os.environ.get("BOT_TOKEN", "")
 CHANNEL_ID    = os.environ.get("CHANNEL_ID", "")
@@ -186,11 +186,11 @@ def handle_telegram_update(update):
 # ── post publisher ────────────────────────────────────────────────────────────
 
 def publish_post(photo, caption, slug, button_text="Оценить дизайн ✦",
-                 parse_mode="Markdown", name="", subtitle="", photo_url=""):
+                 parse_mode="Markdown", name="", subtitle=""):
     """
     1. Publish photo (no button) — comment section stays visible.
     2. Send rating button as a separate channel message.
-    SLUG_MAP[slug] stores channel_msg_id, button_msg_id, button_text, votes, name, subtitle, photo_url.
+    SLUG_MAP[slug] stores channel_msg_id, button_msg_id, button_text, votes, name, subtitle, photo_file_id.
     """
     # Step 1: publish photo with no inline keyboard
     res = tg("sendPhoto", {
@@ -226,7 +226,6 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
         "button_text":    button_text,
         "name":           name,
         "subtitle":       subtitle,
-        "photo_url":      photo_url,       # optional manual override URL
         "photo_file_id":  photo_file_id,   # auto-captured Telegram file_id
         "votes":          {},
         "comment_ids":    {},  # {username: comment_msg_id}
@@ -251,15 +250,15 @@ ADMIN_FORM = """<!DOCTYPE html>
   small{{color:#888;font-size:12px}}
 </style></head><body>
 <h2>Опубликовать пост в канале</h2>
-<form method="POST" action="/publish">
+<form method="POST" action="/publish" enctype="multipart/form-data">
   <label>Slug (короткий ID поста, напр: sber, yandex, tinkoff)</label>
   <input name="slug" required placeholder="sber" pattern="[a-z0-9_-]+" title="только латиница, цифры, _ и -">
   <label>Название (отображается в мини-апп)</label>
   <input name="name" required placeholder="Сбербанк">
   <label>Подзаголовок (тип + год, напр: Сайт, релиз 2026)</label>
   <input name="subtitle" required placeholder="Сайт, релиз 2026">
-  <label>Фото для мини-апп (https:// URL превью)</label>
-  <input name="photo_url" placeholder="https://example.com/thumb.jpg">
+  <label>Фото для мини-апп (загрузить файл — jpg/png)</label>
+  <input name="photo_file" type="file" accept="image/*">
   <label>Фото поста (Telegram file_id или https:// URL)</label>
   <input name="photo" required placeholder="AgAC... или https://example.com/photo.jpg">
   <label>Подпись (Markdown: *жирный*, _курсив_, [текст](https://url))</label>
@@ -281,23 +280,29 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
-        # ── GET /photo/{slug} — proxy Telegram post photo for mini-app ────────
+        # ── GET /photo/{slug} — serve thumbnail for mini-app ─────────────────
         if self.path.startswith("/photo/"):
             slug  = self.path[7:].split("?")[0]
+
+            # 1. Locally uploaded file (from admin form)
+            local_path = f"/tmp/photos/{slug}"
+            if os.path.exists(local_path):
+                with open(local_path, "rb") as pf:
+                    img_bytes = pf.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/jpeg")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Cache-Control", "public, max-age=86400")
+                self.send_header("Content-Length", str(len(img_bytes)))
+                self.end_headers()
+                self.wfile.write(img_bytes)
+                return
+
             entry = SLUG_MAP.get(slug)
             if not entry or not isinstance(entry, dict):
                 self.send_response(404); self.end_headers(); return
 
-            # Prefer manual override URL → redirect
-            override = entry.get("photo_url", "")
-            if override:
-                self.send_response(302)
-                self.send_header("Location", override)
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                return
-
-            # Resolve Telegram file_id → file_path → proxy image bytes
+            # 2. Resolve Telegram file_id → file_path → proxy image bytes
             file_id = entry.get("photo_file_id", "")
             if not file_id:
                 self.send_response(404); self.end_headers(); return
@@ -378,15 +383,38 @@ class Handler(BaseHTTPRequestHandler):
         # ── Publish post ──────────────────────────────────────────────────────
         if self.path == "/publish":
             ct = self.headers.get("Content-Type", "")
-            d  = (json.loads(body) if "application/json" in ct
-                  else dict(urllib.parse.parse_qsl(body.decode())))
-            photo       = d.get("photo",       "").strip()
-            caption     = d.get("caption",     "").strip()
-            slug        = d.get("slug",        "").strip()
-            button_text = d.get("button_text", "Оценить дизайн ✦").strip() or "Оценить дизайн ✦"
-            name        = d.get("name",        "").strip()
-            subtitle    = d.get("subtitle",    "").strip()
-            photo_url   = d.get("photo_url",   "").strip()
+            photo_file_data = None
+            if "multipart/form-data" in ct:
+                fs = cgi.FieldStorage(
+                    fp=io.BytesIO(body), headers=self.headers,
+                    environ={"REQUEST_METHOD": "POST",
+                             "CONTENT_TYPE": ct,
+                             "CONTENT_LENGTH": str(len(body))})
+                def fval(k): return fs[k].value.strip() if k in fs else ""
+                photo       = fval("photo")
+                caption     = fval("caption")
+                slug        = fval("slug")
+                button_text = fval("button_text") or "Оценить дизайн ✦"
+                name        = fval("name")
+                subtitle    = fval("subtitle")
+                if "photo_file" in fs and fs["photo_file"].filename:
+                    photo_file_data = fs["photo_file"].file.read()
+            elif "application/json" in ct:
+                d = json.loads(body)
+                photo       = d.get("photo",       "").strip()
+                caption     = d.get("caption",     "").strip()
+                slug        = d.get("slug",        "").strip()
+                button_text = d.get("button_text", "Оценить дизайн ✦").strip() or "Оценить дизайн ✦"
+                name        = d.get("name",        "").strip()
+                subtitle    = d.get("subtitle",    "").strip()
+            else:
+                d = dict(urllib.parse.parse_qsl(body.decode()))
+                photo       = d.get("photo",       "").strip()
+                caption     = d.get("caption",     "").strip()
+                slug        = d.get("slug",        "").strip()
+                button_text = d.get("button_text", "Оценить дизайн ✦").strip() or "Оценить дизайн ✦"
+                name        = d.get("name",        "").strip()
+                subtitle    = d.get("subtitle",    "").strip()
             if not photo or not caption or not slug:
                 self.send_response(400)
                 self.send_header("Content-Type", "application/json")
@@ -394,8 +422,14 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"ok": False,
                     "error": "photo, caption and slug are required"}).encode())
                 return
+            # Save uploaded thumbnail to disk for /photo/{slug}
+            if photo_file_data and slug:
+                os.makedirs("/tmp/photos", exist_ok=True)
+                with open(f"/tmp/photos/{slug}", "wb") as pf:
+                    pf.write(photo_file_data)
+
             msg_id = publish_post(photo, caption, slug, button_text,
-                                  name=name, subtitle=subtitle, photo_url=photo_url)
+                                  name=name, subtitle=subtitle)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

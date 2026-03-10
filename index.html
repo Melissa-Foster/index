@@ -899,7 +899,15 @@ async function deleteRating() {
   hapticNotif('warning');
   const saved = localStorage.getItem(STORAGE_KEY);
   const prevCommentId = saved ? JSON.parse(saved).commentId : null;
-  await sendToServer({ postId: POST_ID, action: 'delete', prevCommentId });
+  const user = tg?.initDataUnsafe?.user;
+  await sendToServer({
+    postId:       POST_ID,
+    action:       'delete',
+    prevCommentId,
+    userId:       user?.id    || null,
+    username:     user?.username || null,
+    name:         user ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` : 'Аноним',
+  });
 
   localStorage.removeItem(STORAGE_KEY);
   hasVoted = false; scores = {}; comment = '';

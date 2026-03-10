@@ -860,6 +860,7 @@ async function handleSubmit() {
   const rating = {
     postId:           POST_ID,
     prevCommentId,
+    userId:   user?.id    || null,
     name:     user ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` : 'Аноним',
     username: user?.username || null,
     scores:   { ...scores },

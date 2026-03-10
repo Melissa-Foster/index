@@ -418,7 +418,10 @@ class Handler(BaseHTTPRequestHandler):
         post_id  = data.get("postId", "")
         prev_id  = data.get("prevCommentId")
         final    = data.get("final", 0)
-        username = data.get("username") or data.get("name") or "anon"
+        # Use Telegram user_id as primary key — guaranteed unique across accounts.
+        # Fall back to @username, then display name for anonymous/web users.
+        user_id  = data.get("userId")
+        username = str(user_id) if user_id else (data.get("username") or data.get("name") or "anon")
         chat_id  = DISCUSSION_ID if DISCUSSION_ID else CHANNEL_ID
 
         discussion_thread_id = resolve_discussion_thread(post_id)

@@ -1,5 +1,34 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import json, urllib.request, urllib.parse, os, cgi, io
+import json, urllib.request, urllib.parse, os, re
+
+def parse_multipart(body: bytes, content_type: str):
+    """Parse multipart/form-data without the removed cgi module (Python 3.13+)."""
+    m = re.search(r'boundary=([^\s;]+)', content_type)
+    if not m:
+        return {}, {}
+    boundary = m.group(1).strip('"').encode()
+    fields, files = {}, {}
+    for part in body.split(b'--' + boundary):
+        if part in (b'', b'--\r\n', b'--') or part.startswith(b'--'):
+            continue
+        if part.startswith(b'\r\n'):
+            part = part[2:]
+        if b'\r\n\r\n' not in part:
+            continue
+        hdr_raw, content = part.split(b'\r\n\r\n', 1)
+        if content.endswith(b'\r\n'):
+            content = content[:-2]
+        hdr = hdr_raw.decode('utf-8', errors='replace')
+        nm  = re.search(r'name="([^"]*)"',     hdr)
+        fnm = re.search(r'filename="([^"]*)"', hdr)
+        if not nm:
+            continue
+        name = nm.group(1)
+        if fnm and fnm.group(1):
+            files[name]  = content
+        else:
+            fields[name] = content.decode('utf-8', errors='replace')
+    return fields, files
 
 BOT_TOKEN     = os.environ.get("BOT_TOKEN", "")
 CHANNEL_ID    = os.environ.get("CHANNEL_ID", "")
@@ -385,20 +414,16 @@ class Handler(BaseHTTPRequestHandler):
             ct = self.headers.get("Content-Type", "")
             photo_file_data = None
             if "multipart/form-data" in ct:
-                fs = cgi.FieldStorage(
-                    fp=io.BytesIO(body), headers=self.headers,
-                    environ={"REQUEST_METHOD": "POST",
-                             "CONTENT_TYPE": ct,
-                             "CONTENT_LENGTH": str(len(body))})
-                def fval(k): return fs[k].value.strip() if k in fs else ""
+                fields, files = parse_multipart(body, ct)
+                def fval(k): return fields.get(k, "").strip()
                 photo       = fval("photo")
                 caption     = fval("caption")
                 slug        = fval("slug")
                 button_text = fval("button_text") or "Оценить дизайн ✦"
                 name        = fval("name")
                 subtitle    = fval("subtitle")
-                if "photo_file" in fs and fs["photo_file"].filename:
-                    photo_file_data = fs["photo_file"].file.read()
+                if "photo_file" in files:
+                    photo_file_data = files["photo_file"]
             elif "application/json" in ct:
                 d = json.loads(body)
                 photo       = d.get("photo",       "").strip()

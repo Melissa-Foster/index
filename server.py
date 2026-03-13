@@ -387,6 +387,8 @@ ADMIN_FORM = """<!DOCTYPE html>
   button{background:#7b2ff7;color:#fff;border:none;padding:10px 28px;cursor:pointer;
           border-radius:6px;margin-top:12px;font-size:15px}
   small{color:#888;font-size:12px}
+  pre{background:#111;color:#0f0;padding:12px;border-radius:6px;overflow:auto;font-size:12px}
+  h3{margin-top:32px}
 </style></head><body>
 <h2>Опубликовать пост в канале</h2>
 <form method="POST" action="/publish" enctype="multipart/form-data">
@@ -485,7 +487,12 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            self.wfile.write(ADMIN_FORM.encode())
+            status = (
+                f"<h3>SLUG_MAP</h3><pre>{json.dumps(SLUG_MAP, indent=2, ensure_ascii=False)}</pre>"
+                f"<h3>POST_MAP</h3><pre>{json.dumps(POST_MAP, indent=2)}</pre>"
+            )
+            html = ADMIN_FORM.replace("</body></html>", status + "</body></html>")
+            self.wfile.write(html.encode())
         else:
             self.send_response(200)
             self.send_header("Content-Type", "application/json")

@@ -318,7 +318,7 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
     2. Send rating button as a separate channel message.
     SLUG_MAP[slug] stores channel_msg_id, button_msg_id, button_text, votes, name, subtitle, photo_file_id.
     """
-    # Step 1: publish photo/video with no inline keyboard
+    # Step 1: publish media or text with no inline keyboard
     if photo_bytes:
         video = is_video(photo_bytes)
         tg_method  = "sendVideo" if video else "sendPhoto"
@@ -332,10 +332,9 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
         }, tg_field, photo_bytes, filename=tg_fname, content_type=tg_ctype,
             thumb_bytes=thumb_bytes if video else None)
     else:
-        res = tg("sendPhoto", {
+        res = tg("sendMessage", {
             "chat_id":    CHANNEL_ID,
-            "photo":      photo,
-            "caption":    caption,
+            "text":       caption,
             "parse_mode": parse_mode,
         })
     if not res or not res.get("ok"):
@@ -401,8 +400,8 @@ ADMIN_FORM = """<!DOCTYPE html>
   <input name="subtitle" required placeholder="Сайт, релиз 2026">
   <label>Фото для мини-апп (загрузить файл — jpg/png)</label>
   <input name="photo_file" type="file" accept="image/*">
-  <label>Фото или видео поста (jpg/png/mp4/mov)</label>
-  <input name="post_photo" type="file" accept="image/*,video/*" required>
+  <label>Фото или видео поста (jpg/png/mp4/mov) — необязательно</label>
+  <input name="post_photo" type="file" accept="image/*,video/*">
   <label>Подпись (Markdown: *жирный*, _курсив_, [текст](https://url))</label>
   <textarea name="caption" rows="6" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание...\n\n[Открыть сайт](https://sber.ru)"></textarea>
   <label>Текст кнопки оценки</label>
@@ -563,12 +562,12 @@ class Handler(BaseHTTPRequestHandler):
                 button_text = d.get("button_text", "Оценить дизайн ✦").strip() or "Оценить дизайн ✦"
                 name        = d.get("name",        "").strip()
                 subtitle    = d.get("subtitle",    "").strip()
-            if not caption or not slug or not post_photo_data:
+            if not caption or not slug:
                 self.send_response(400)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps({"ok": False,
-                    "error": "post_photo file, caption and slug are required"}).encode())
+                    "error": "caption and slug are required"}).encode())
                 return
             # Save uploaded thumbnail to disk for /photo/{slug}
             if photo_file_data and slug:

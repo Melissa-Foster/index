@@ -290,10 +290,10 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
     # Step 1: publish photo/video with no inline keyboard
     if photo_bytes:
         video = is_video(photo_bytes)
-        tg_method  = "sendDocument" if video else "sendPhoto"
-        tg_field   = "document"     if video else "photo"
-        tg_ctype   = "video/mp4"    if video else "image/jpeg"
-        tg_fname   = "video.mp4"    if video else "photo.jpg"
+        tg_method  = "sendVideo" if video else "sendPhoto"
+        tg_field   = "video"     if video else "photo"
+        tg_ctype   = "video/mp4" if video else "image/jpeg"
+        tg_fname   = "video.mp4" if video else "photo.jpg"
         res = tg_file(tg_method, {
             "chat_id":    CHANNEL_ID,
             "caption":    caption,
@@ -313,11 +313,11 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
     photo_msg_id = res["result"]["message_id"]
 
     # Extract file_id for the proxy endpoint
-    photos   = res["result"].get("photo", [])
-    doc      = res["result"].get("document", {})
+    photos    = res["result"].get("photo", [])
+    video_obj = res["result"].get("video", {})
     photo_file_id = (photos[-1]["file_id"] if photos
-                     else doc.get("thumbnail", {}).get("file_id", "")
-                     or doc.get("file_id", ""))
+                     else video_obj.get("thumbnail", {}).get("file_id", "")
+                     or video_obj.get("file_id", ""))
 
     # Step 2: send button message
     button_url = f"{MINI_APP_URL}?startapp={slug}"

@@ -104,7 +104,7 @@ def tg(method, data):
             pass
         return None
 
-def extract_video_thumbnail(video_bytes: bytes) -> bytes | None:
+def extract_video_thumbnail(video_bytes: bytes):
     """Extract a frame from video at 1s using ffmpeg, return JPEG bytes."""
     import subprocess, tempfile
     try:

@@ -72,6 +72,19 @@ def save_slug_map(m):
 POST_MAP = load_map()       # {channel_post_id: discussion_thread_id}
 SLUG_MAP = load_slug_map()  # {slug: {channel_msg_id, button_msg_id, button_text, votes, name, subtitle, photo_url, ...}}
 
+# ── startup diagnostics ───────────────────────────────────────────────────────
+import stat
+_is_mount = False
+try:
+    _data_stat = os.stat(DATA_DIR)
+    _root_stat = os.stat("/")
+    _is_mount  = _data_stat.st_dev != _root_stat.st_dev
+except Exception as _e:
+    print(f"[DIAG] stat error: {_e}")
+print(f"[DIAG] DATA_DIR={DATA_DIR} is_mount={_is_mount} "
+      f"files={os.listdir(DATA_DIR)} "
+      f"POST_MAP_size={len(POST_MAP)} SLUG_MAP_size={len(SLUG_MAP)}")
+
 # ── Telegram API helper ───────────────────────────────────────────────────────
 
 def tg(method, data):

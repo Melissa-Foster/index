@@ -334,14 +334,12 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
 ADMIN_FORM = """<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Publish post</title>
 <style>
-  body{{font-family:sans-serif;max-width:640px;margin:40px auto;padding:0 20px}}
-  label{{font-weight:600;display:block;margin-top:14px}}
-  input,textarea{{width:100%;padding:8px;margin:4px 0;box-sizing:border-box;font-size:14px}}
-  button{{background:#7b2ff7;color:#fff;border:none;padding:10px 28px;cursor:pointer;
-          border-radius:6px;margin-top:12px;font-size:15px}}
-  pre{{background:#111;color:#0f0;padding:12px;border-radius:6px;overflow:auto}}
-  h3{{margin-top:32px}}
-  small{{color:#888;font-size:12px}}
+  body{font-family:sans-serif;max-width:640px;margin:40px auto;padding:0 20px}
+  label{font-weight:600;display:block;margin-top:14px}
+  input,textarea{width:100%;padding:8px;margin:4px 0;box-sizing:border-box;font-size:14px}
+  button{background:#7b2ff7;color:#fff;border:none;padding:10px 28px;cursor:pointer;
+          border-radius:6px;margin-top:12px;font-size:15px}
+  small{color:#888;font-size:12px}
 </style></head><body>
 <h2>Опубликовать пост в канале</h2>
 <form method="POST" action="/publish" enctype="multipart/form-data">

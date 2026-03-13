@@ -31,6 +31,15 @@ html, body {
   font-family: 'TTCommons', -apple-system, sans-serif;
   font-weight: 500;
   color: #1C1C1E;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── MOBILE FRAME ────────────────────────────────── */
+body {
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
 }
 
 /* ── PAGES ──────────────────────────────────────── */
@@ -45,9 +54,8 @@ html, body {
   background: #fff;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 16px;
-  border-bottom: 1px solid #F0F0F0;
+  gap: 10px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 16px 10px;
   transition: padding 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -88,135 +96,148 @@ html, body {
   font-size: 26px;
 }
 
-/* Info block */
-.header-info { flex: 1; min-width: 0; }
+/* Info block — two baseline-aligned rows */
+.header-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-.header-name {
-  font-size: 24px;
-  font-weight: 500;
-  color: #1C1C1E;
-  line-height: 1.05;
-  margin-bottom: 2px;
-  white-space: nowrap;
+.header-row-1 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.header-row-2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  max-height: 22px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  transition: font-size 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease;
 }
 
-.header.collapsed .header-name {
-  font-size: 18px;
-  margin-bottom: 0;
-}
-
-.header-subtitle {
-  font-size: 13px;
-  color: #7B4FFF;
-  font-weight: 500;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-height: 20px;
-  opacity: 1;
-  transition:
-    max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.18s ease,
-    margin 0.28s ease;
-}
-
-.header.collapsed .header-subtitle {
+.header.collapsed .header-row-2 {
   max-height: 0;
   opacity: 0;
 }
 
-/* Score block (right) */
-.header-score {
-  text-align: right;
-  flex-shrink: 0;
-  transition: opacity 0.22s ease;
+.header-name {
+  font-size: 32px;
+  font-weight: 500;
+  color: #1C1C1E;
+  line-height: 1;
+  letter-spacing: -1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  transition: font-size 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.header-score.hidden { opacity: 0; pointer-events: none; }
+
+.header.collapsed .header-name {
+  font-size: 24px;
+  letter-spacing: -1px;
+}
+
+.header.collapsed {
+  gap: 0;
+}
+
+.header-subtitle {
+  font-size: 16px;
+  color: #7130ff;
+  font-weight: 500;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Score elements — hidden until first score selected */
+#header-score.hidden .header-score-val,
+#header-score.hidden .header-score-label {
+  opacity: 0;
+  pointer-events: none;
+}
 
 .header-score-val {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 500;
-  color: #7B4FFF;
+  color: #7130ff;
   line-height: 1;
-  margin-bottom: 2px;
+  letter-spacing: -1px;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition:
     font-size 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.22s ease,
     transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .header.collapsed .header-score-val {
   font-size: 20px;
-  margin-bottom: 0;
 }
 
 .header-score-label {
-  font-size: 12px;
-  color: #AEAEB2;
-  font-weight: 400;      /* Normal — gray */
-  line-height: 1.2;
-  max-height: 18px;
-  opacity: 1;
-  transition:
-    max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.18s ease,
-    margin 0.28s ease;
-}
-
-.header.collapsed .header-score-label {
-  max-height: 0;
-  opacity: 0;
+  font-size: 16px;
+  color: #717171;
+  font-weight: 400;
+  line-height: 1.1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: opacity 0.22s ease;
 }
 
 .header-score-val .denom {
-  font-size: 15px;
-  color: #C8C8CC;
-  font-weight: 400;      /* Normal — gray */
+  font-size: inherit;
+  color: #C5C5C5;
+  font-weight: 400;
 }
 
 .header-score-val.bump { transform: scale(1.15); }
 
 /* ── SCROLL BODY ─────────────────────────────────── */
 .body {
-  padding: 0 20px calc(165px + env(safe-area-inset-bottom, 20px));
+  padding: 0 16px calc(150px + env(safe-area-inset-bottom, 20px));
 }
 
 /* ── CRITERIA BLOCK ──────────────────────────────── */
 .crit-block {
-  padding-top: 32px;
-  padding-bottom: 8px;
+  padding-top: 24px;
+  padding-bottom: 0;
 }
 
-/* No dividers between criteria */
-.crit-block + .crit-block {
-  border-top: none;
+.crit-block:first-child {
+  padding-top: 16px;
 }
 
 .crit-name {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 500;
   color: #1C1C1E;
   line-height: 1.2;
-  margin-bottom: 5px;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.crit-desc {
-  font-size: 14px;
+.crit-text {
+  font-size: 16px;
   font-weight: 400;      /* Normal — gray */
-  color: #636366;
-  line-height: 1.45;
-  margin-bottom: 2px;
-}
-
-.crit-hint {
-  font-size: 14px;
-  font-weight: 400;      /* Normal — gray */
-  color: #636366;
-  line-height: 1.45;
-  margin-bottom: 16px;
+  color: #717171;
+  line-height: 1.1;
+  margin-bottom: 12px;
 }
 
 /* ── SCORE BUTTONS ───────────────────────────────── */
@@ -227,14 +248,15 @@ html, body {
 }
 
 .score-btn {
-  height: 46px;
-  border-radius: 14px;
+  height: 40px;
+  border-radius: 10px;
   border: none;
-  background: #EDE8FF;
+  background: rgba(113,48,255,0.14);
   font-family: 'TTCommons', sans-serif;
   font-size: 18px;
   font-weight: 500;
-  color: #7B4FFF;
+  color: #7130ff;
+  letter-spacing: -1px;
   cursor: pointer;
   transition: all 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
   display: flex; align-items: center; justify-content: center;
@@ -243,73 +265,114 @@ html, body {
 .score-btn:active { transform: scale(0.91); }
 
 .score-btn.selected {
-  background: #7B4FFF;
+  background: #7130ff;
   color: #fff;
   transform: scale(1.06);
 }
 
 /* ── COMMENT ─────────────────────────────────────── */
 .comment-section {
-  padding-top: 28px;
-  border-top: 1px solid #F0F0F0;
-  margin-top: 16px;
+  padding-top: 24px;
+  margin-top: 8px;
 }
 
 .comment-user {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 10px;
 }
 
 .comment-avatar {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: #EDE8FF; overflow: hidden; flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(113,48,255,0.14); overflow: hidden; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 500; color: #7B4FFF;
+  font-size: 14px; font-weight: 500; color: #7130ff;
 }
 
 .comment-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .comment-username {
-  font-size: 15px; font-weight: 500; color: #1C1C1E;
+  font-size: 16px; font-weight: 500; color: #1C1C1E;
+  letter-spacing: -0.56px;
+}
+
+.textarea-wrap {
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 textarea {
   width: 100%;
-  background: #F2F2F7;
-  border: none; outline: none; border-radius: 14px;
-  padding: 14px 16px;
+  background: rgba(0,0,0,0.06);
+  border: none; outline: none; border-radius: 0;
+  padding: 12px;
   font-family: 'TTCommons', sans-serif;
-  font-size: 15px; font-weight: 400; line-height: 1.55; color: #1C1C1E;
-  resize: none; min-height: 110px; display: block;
+  font-size: 16px; font-weight: 400; line-height: 1.4; color: #1C1C1E;
+  resize: none; min-height: 88px; display: block;
 }
 
 textarea::placeholder {
-  color: #AEAEB2;
+  color: rgba(0,0,0,0.3);
   font-weight: 400;
 }
 
+.textarea-wrap.error textarea {
+  background: rgba(224,55,61,0.1);
+}
+
+.textarea-wrap.error {
+  outline: 1px solid #E0373D;
+}
+
+textarea::-webkit-scrollbar {
+  width: 3px;
+}
+textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+textarea::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 2px;
+}
+
 .char-hint {
-  text-align: right; font-size: 12px;
-  font-weight: 400; color: #AEAEB2;
+  display: none; justify-content: space-between; align-items: center;
+  font-family: 'TTCommons', sans-serif;
+  font-size: 14px; font-weight: 500; letter-spacing: -0.7px; line-height: 0.9; color: #E0373D;
   margin-top: 6px;
 }
 
 /* ── BOTTOM BAR ──────────────────────────────────── */
 .bottom-bar {
   position: fixed; bottom: 0; left: 0; right: 0;
-  padding: 12px 20px calc(16px + env(safe-area-inset-bottom, 16px));
-  background: linear-gradient(to top, #fff 72%, rgba(255,255,255,0));
+  padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 16px));
+  background: #fff;
   z-index: 200;
+}
+
+.bottom-bar::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 0; right: 0;
+  height: 52px;
+  background: linear-gradient(to bottom, transparent, #fff);
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.bottom-bar.no-gradient::before {
+  opacity: 0;
 }
 
 .submit-btn {
   width: 100%;
-  background: #1C1C1E;
+  background: #282828;
   color: #fff; border: none;
-  border-radius: 18px;
-  padding: 17px;
+  border-radius: 10px;
+  height: 48px;
+  padding: 4px 16px;
   font-family: 'TTCommons', sans-serif;
-  font-size: 17px; font-weight: 500;
+  font-size: 18px; font-weight: 500; letter-spacing: -0.9px;
   cursor: pointer;
   transition: transform 0.15s, opacity 0.2s;
 }
@@ -320,32 +383,48 @@ textarea::placeholder {
 .bottom-hint-row {
   padding-top: 10px;
   text-align: center;
-  min-height: 22px;
+  min-height: 28px;
 }
 
 .bottom-system-link {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 13px; color: #7B4FFF; font-weight: 500; cursor: pointer;
-  opacity: 0.75;
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 16px; color: #717171; font-weight: 500; cursor: pointer;
+  letter-spacing: -0.56px;
+  line-height: 1;
+  text-decoration: none;
 }
 
-.bottom-system-link svg { width: 11px; height: 11px; }
+.bottom-system-link span {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 4px;
+  padding-bottom: 1px;
+}
+
+.bottom-system-link svg {
+  width: 12px; height: 12px;
+  flex-shrink: 0;
+  position: relative;
+  top: 1px;
+}
 
 .bottom-error {
-  font-size: 13px; color: #FF3B30; font-weight: 400;
+  font-size: 15px; color: #FF3B30; font-weight: 400;
 }
 
 .delete-inline-btn {
   display: none;
   width: 100%;
-  background: transparent;
+  height: 48px;
+  background: rgba(0,0,0,0.06);
   border: none;
-  border-radius: 18px;
-  padding: 14px;
+  border-radius: 10px;
+  padding: 4px 16px;
   font-family: 'TTCommons', sans-serif;
-  font-size: 17px; font-weight: 500; color: #1C1C1E;
+  font-size: 18px; font-weight: 500; letter-spacing: -0.9px; color: #1C1C1E;
   cursor: pointer;
-  margin-top: 4px;
+  margin-top: 12px;
   transition: transform 0.15s, opacity 0.15s;
 }
 .delete-inline-btn:active { transform: scale(0.98); opacity: 0.65; }
@@ -354,59 +433,99 @@ textarea::placeholder {
 #page-success {
   display: none;
   min-height: 100vh;
-  flex-direction: column; align-items: center; justify-content: center;
-  padding: 40px 24px calc(40px + env(safe-area-inset-bottom, 20px));
+  flex-direction: column; align-items: center;
+  padding: env(safe-area-inset-top, 0px) 16px calc(40px + env(safe-area-inset-bottom, 20px));
   background: #fff;
 }
 #page-success.active { display: flex; }
 
-/* Score number with count-up animation */
-.success-score-num {
-  font-size: 120px; font-weight: 500;
-  color: #7B4FFF; line-height: 1;
-  margin-bottom: 40px;
+/* Center block: flower + text */
+.success-main {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center;
+  padding-top: 40px; /* bias slightly below true center */
+  width: 100%;
+}
+
+/* Score area: flower SVG + number */
+.success-score-area {
+  position: relative;
+  width: 182px; height: 182px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+/* Rotation wrapper — separate from opacity */
+#score-spinner {
+  position: absolute; inset: 0;
+  transform-origin: 50% 50%;
+}
+
+@keyframes flowerSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+#score-spinner.spinning {
+  animation: flowerSpin 16s linear infinite;
+}
+
+#score-svg {
+  width: 100%; height: 100%;
   opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.32,0.72,0,1);
+  transition: opacity 0.3s ease;
+  display: block;
 }
-.success-score-num.visible {
-  opacity: 1;
-  transform: translateY(0);
+#score-svg.visible { opacity: 1; }
+
+.success-score-num {
+  font-size: 80px; font-weight: 500;
+  color: #7130ff; line-height: 0.9; letter-spacing: -1px;
+  position: relative; z-index: 1;
+  opacity: 0;
+  transition: opacity 0.35s ease;
 }
+.success-score-num.visible { opacity: 1; }
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.success-title {
-  font-size: 26px; font-weight: 500; text-align: center; margin-bottom: 10px;
+.success-text-group {
+  text-align: center; width: 100%;
   animation: fadeUp 0.4s cubic-bezier(0.32,0.72,0,1) 0.55s both;
 }
 
+.success-title {
+  font-size: 32px; font-weight: 500; color: #1C1C1E;
+  letter-spacing: -1px; line-height: 0.9;
+  margin-bottom: 11px;
+}
+
 .success-sub {
-  font-size: 15px; font-weight: 400; color: #636366; line-height: 1.55;
-  text-align: center; margin-bottom: 52px;
-  animation: fadeUp 0.4s cubic-bezier(0.32,0.72,0,1) 0.65s both;
+  font-size: 16px; font-weight: 400; color: #717171; line-height: 1.1;
 }
 
 .success-actions {
-  width: 100%; display: flex; flex-direction: column; gap: 9px;
+  width: 100%; display: flex; flex-direction: column; gap: 12px;
+  flex-shrink: 0;
   animation: fadeUp 0.4s cubic-bezier(0.32,0.72,0,1) 0.75s both;
 }
 
 .btn-to-channel {
-  width: 100%; background: #1C1C1E; color: #fff;
-  border: none; border-radius: 18px; padding: 17px;
-  font-family: 'TTCommons', sans-serif; font-size: 17px; font-weight: 500;
+  width: 100%; background: #282828; color: #fff;
+  border: none; border-radius: 10px; height: 48px; padding: 4px 16px;
+  font-family: 'TTCommons', sans-serif; font-size: 18px; font-weight: 500; letter-spacing: -0.9px;
   cursor: pointer; transition: transform 0.15s;
 }
 .btn-to-channel:active { transform: scale(0.98); }
 
 .btn-edit-rating {
-  width: 100%; background: #F2F2F7; color: #1C1C1E;
-  border: none; border-radius: 18px; padding: 17px;
-  font-family: 'TTCommons', sans-serif; font-size: 17px; font-weight: 500;
+  width: 100%; background: rgba(0,0,0,0.06); color: #1C1C1E;
+  border: none; border-radius: 10px; height: 48px; padding: 4px 16px;
+  font-family: 'TTCommons', sans-serif; font-size: 18px; font-weight: 500; letter-spacing: -0.9px;
   cursor: pointer; transition: transform 0.15s;
 }
 .btn-edit-rating:active { transform: scale(0.98); }
@@ -425,8 +544,9 @@ textarea::placeholder {
 .modal-sheet {
   width: 100%; background: #fff;
   border-radius: 24px 24px 0 0;
-  padding: 24px 20px calc(36px + env(safe-area-inset-bottom, 20px));
-  max-height: 88vh; overflow-y: auto;
+  max-height: 94vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
   transform: translateY(100%);
   transition: transform 0.34s cubic-bezier(0.32,0.72,0,1);
 }
@@ -435,65 +555,80 @@ textarea::placeholder {
 /* Header row: title + × */
 .modal-header {
   display: flex; align-items: center;
-  justify-content: space-between; margin-bottom: 28px;
+  justify-content: space-between;
+  padding: 20px 16px 16px;
+  flex-shrink: 0;
+  background: #fff;
 }
 .modal-title {
-  font-size: 22px; font-weight: 500; color: #1C1C1E;
+  font-size: 32px; font-weight: 500; color: #1C1C1E;
+  letter-spacing: -1px; line-height: 1;
 }
 .modal-close {
-  width: 30px; height: 30px; border-radius: 50%;
-  background: #F2F2F7; border: none;
+  width: 24px; height: 24px;
+  background: transparent; border: none; padding: 0;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; flex-shrink: 0;
-  font-size: 15px; color: #636366;
+  color: #AEAEB2;
   transition: opacity 0.15s;
+  align-self: center;
 }
-.modal-close:active { opacity: 0.55; }
+.modal-close:active { opacity: 0.45; }
+
+.modal-content {
+  overflow-y: auto;
+  padding: 8px 16px calc(36px + env(safe-area-inset-bottom, 20px));
+  flex: 1;
+}
 
 /* Numbered section headings */
 .modal-sec {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 .modal-sec-heading {
   font-size: 20px; font-weight: 500; color: #1C1C1E;
-  margin-bottom: 12px;
+  letter-spacing: -0.5px; line-height: 0.9;
+  margin-bottom: 10px;
 }
 
 /* Body paragraph */
 .modal-p {
-  font-size: 15px; font-weight: 400; color: #1C1C1E;
-  line-height: 1.5; margin-bottom: 8px;
+  font-size: 16px; font-weight: 400; color: #1C1C1E;
+  line-height: 1.1; margin-bottom: 10px;
 }
 .modal-p:last-child { margin-bottom: 0; }
 
 /* Purple formula box */
 .modal-formula {
-  background: #EDE8FF; border-radius: 14px;
-  padding: 15px 16px; margin-top: 14px;
-  font-size: 15px; color: #7B4FFF; font-weight: 500;
-  text-align: center;
+  background: rgba(113,48,255,0.08); border-radius: 10px;
+  height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 16px; margin-top: 12px;
+  font-size: 16px; color: #7130ff; font-weight: 500;
+  letter-spacing: -0.7px;
+  white-space: nowrap;
 }
 
 /* Multiplier table */
 .mult-table-label {
-  font-size: 13px; font-weight: 400; color: #AEAEB2;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #F0F0F0;
-  margin-top: 14px;
+  font-size: 16px; font-weight: 400; color: #717171;
+  margin-top: 14px; margin-bottom: 4px;
 }
 .mult-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 0;
-  border-bottom: 1px solid #F0F0F0;
-  font-size: 15px;
+  display: flex; align-items: center; gap: 14px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid rgba(0,0,0,0.2);
+  font-size: 16px;
 }
 .mult-row:last-child { border-bottom: none; }
-.mult-score { color: #1C1C1E; font-weight: 400; }
-.mult-val { font-weight: 500; color: #7B4FFF; }
+.mult-score { color: #1C1C1E; font-weight: 400; white-space: nowrap; flex-shrink: 0; width: 80px; }
+.mult-arrow { color: #717171; font-weight: 400; font-size: 14px; width: 24px; flex-shrink: 0; }
+.mult-val { font-weight: 500; color: #7130ff; letter-spacing: -0.56px; }
 
 /* Note under last formula */
 .modal-note {
-  font-size: 13px; font-weight: 400; color: #AEAEB2;
+  font-size: 14px; font-weight: 400; color: #717171;
+  letter-spacing: -0.56px;
   margin-top: 10px;
 }
 
@@ -512,15 +647,15 @@ textarea::placeholder {
     <div class="header-thumb" id="header-thumb">
       <div class="header-thumb-placeholder" id="header-thumb-inner">✦</div>
     </div>
-    <div class="header-info">
-      <div class="header-name" id="header-name"></div>
-      <div class="header-subtitle" id="header-subtitle"></div>
-    </div>
-    <div class="header-score hidden" id="header-score">
-      <div class="header-score-val" id="live-score">
-        —<span class="denom">/17</span>
+    <div class="header-info hidden" id="header-score">
+      <div class="header-row-1">
+        <div class="header-name" id="header-name">Сбербанк</div>
+        <div class="header-score-val" id="live-score">—<span class="denom">/17</span></div>
       </div>
-      <div class="header-score-label">Оценка</div>
+      <div class="header-row-2">
+        <div class="header-subtitle" id="header-subtitle">Сайт, релиз 2025</div>
+        <div class="header-score-label">Оценка</div>
+      </div>
     </div>
   </div>
 
@@ -535,10 +670,13 @@ textarea::placeholder {
         <div class="comment-avatar" id="user-avatar">А</div>
         <div class="comment-username" id="user-name">Аноним</div>
       </div>
-      <textarea id="comment-input"
-        placeholder="Поделитесь мнением о дизайне..."
-        rows="4"
-        oninput="onCommentInput(this)"></textarea>
+      <div class="textarea-wrap" id="textarea-wrap">
+        <textarea id="comment-input"
+          placeholder="Поделитесь мнением о дизайне..."
+          rows="4"
+          oninput="onCommentInput(this)"></textarea>
+      </div>
+      <div class="char-hint" id="char-hint"></div>
     </div>
 
   </div>
@@ -564,11 +702,20 @@ textarea::placeholder {
 ══════════════════════════════════════════════ -->
 <div id="page-success" class="page">
 
-  <div class="success-score-num" id="success-score">0</div>
+  <div class="success-main">
+    <div class="success-score-area">
+      <div id="score-spinner">
+        <svg id="score-svg" viewBox="0 0 182 182" xmlns="http://www.w3.org/2000/svg">
+          <path id="score-shape" fill="rgba(113,48,255,0.14)" d=""/>
+        </svg>
+      </div>
+      <div class="success-score-num" id="success-score">0</div>
+    </div>
 
-  <div class="success-title">Оценка опубликована!</div>
-  <div class="success-sub">
-    Теперь её видно в комментариях<br>под постом
+    <div class="success-text-group">
+      <div class="success-title">Оценка опубликована!</div>
+      <div class="success-sub">Теперь её видно в&nbsp;комментариях<br>под постом</div>
+    </div>
   </div>
 
   <div class="success-actions">
@@ -585,39 +732,49 @@ textarea::placeholder {
 <div class="modal-overlay" id="system-modal" onclick="maybeCloseModal(event)">
   <div class="modal-sheet">
 
-    <!-- Header -->
+    <!-- Sticky header -->
     <div class="modal-header">
       <div class="modal-title">Система оценки</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+          <line x1="1" y1="1" x2="13" y2="13"/>
+          <line x1="13" y1="1" x2="1" y2="13"/>
+        </svg>
+      </button>
     </div>
 
-    <!-- 1. Оценка базы -->
-    <div class="modal-sec">
-      <div class="modal-sec-heading">1. Оценка базы</div>
-      <p class="modal-p">База — функциональная зрелость дизайна: сумма критериев Смысл, Удобство и Визуал. Каждый критерий — от 1 до 5 баллов.</p>
-      <p class="modal-p">База: от 3 до 15 баллов</p>
-      <div class="modal-formula">База = Смысл + Удобство + Визуал</div>
-    </div>
+    <!-- Scrollable content -->
+    <div class="modal-content">
 
-    <!-- 2. Оценка идеи -->
-    <div class="modal-sec">
-      <div class="modal-sec-heading">2. Оценка идеи</div>
-      <p class="modal-p">Если База &lt; 9 или хотя бы один критерий &lt; 2, то идея не влияет на итоговую оценку. Идея не может компенсировать слабый фундамент дизайна</p>
-      <p class="modal-p">Если база ≥ 9 и каждый критерий ≥ 2, то итог усиливается за счёт идеи</p>
-      <p class="modal-p">Идея: от 1 до 5 баллов</p>
-      <div class="mult-table-label">Оценка идеи и коэффициент</div>
-      <div class="mult-row"><span class="mult-score">1-2 балла</span><span class="mult-val">× 1.00</span></div>
-      <div class="mult-row"><span class="mult-score">3 балла</span><span class="mult-val">× 1.05</span></div>
-      <div class="mult-row"><span class="mult-score">4 балла</span><span class="mult-val">× 1.10</span></div>
-      <div class="mult-row"><span class="mult-score">5 баллов</span><span class="mult-val">× 1.15</span></div>
-    </div>
+      <!-- 1. Оценка базы -->
+      <div class="modal-sec">
+        <div class="modal-sec-heading">1. Оценка базы</div>
+        <p class="modal-p">База — функциональная зрелость дизайна: сумма критериев смысл, удобство и&nbsp;визуал. Каждый критерий — 1–5&nbsp;баллов.</p>
+        <p class="modal-p">База: 3–15&nbsp;баллов</p>
+        <div class="modal-formula">База = Смысл + Удобство + Визуал</div>
+      </div>
 
-    <!-- 3. Итоговая оценка -->
-    <div class="modal-sec">
-      <div class="modal-sec-heading">3. Итоговая оценка</div>
-      <p class="modal-p">Итог: от 3 до 17 баллов</p>
-      <div class="modal-formula">Итог = round (База × коэффициент идеи)</div>
-      <div class="modal-note">round — округление до целого</div>
+      <!-- 2. Оценка идеи -->
+      <div class="modal-sec">
+        <div class="modal-sec-heading">2. Оценка идеи</div>
+        <p class="modal-p">Если база &lt;&nbsp;9 или хотя бы один критерий &lt;&nbsp;2, то&nbsp;идея не&nbsp;влияет на&nbsp;итоговую оценку. Идея не&nbsp;может компенсировать слабый фундамент дизайна.</p>
+        <p class="modal-p">Если база ≥&nbsp;9 и&nbsp;каждый критерий ≥&nbsp;2, то&nbsp;итог усиливается за&nbsp;счёт идеи.</p>
+        <p class="modal-p">Идея: 1–5&nbsp;баллов</p>
+        <div class="mult-table-label">Оценка идеи и коэффициент</div>
+        <div class="mult-row"><span class="mult-score">1–2 балла</span><span class="mult-arrow">→</span><span class="mult-val">1.00</span></div>
+        <div class="mult-row"><span class="mult-score">3 балла</span><span class="mult-arrow">→</span><span class="mult-val">1.05</span></div>
+        <div class="mult-row"><span class="mult-score">4 балла</span><span class="mult-arrow">→</span><span class="mult-val">1.10</span></div>
+        <div class="mult-row"><span class="mult-score">5 баллов</span><span class="mult-arrow">→</span><span class="mult-val">1.15</span></div>
+      </div>
+
+      <!-- 3. Итоговая оценка -->
+      <div class="modal-sec">
+        <div class="modal-sec-heading">3. Итоговая оценка</div>
+        <p class="modal-p">Итог: 3–17&nbsp;баллов</p>
+        <div class="modal-formula">Итог = round (База × коэффициент идеи)</div>
+        <div class="modal-note">round — округление до&nbsp;целого</div>
+      </div>
+
     </div>
 
   </div>
@@ -641,26 +798,26 @@ const CRITERIA = [
   {
     id: 'content', role: 'K1',
     name: 'Смысл',
-    desc: 'Насколько дизайн помогает решать задачу продукта.',
-    hint: '1 — мешает, 5 — помогает идеально'
+    desc: 'Насколько дизайн помогает решать задачу&nbsp;продукта.',
+    hint: '1&nbsp;— мешает, 5&nbsp;— помогает идеально'
   },
   {
     id: 'usability', role: 'K2',
     name: 'Удобство',
-    desc: 'Насколько интерфейс простой и понятный.',
-    hint: '1 — запутанный, 5 — интуитивный'
+    desc: 'Насколько интерфейс простой и&nbsp;понятный.',
+    hint: '1&nbsp;— запутанный, 5&nbsp;— интуитивный'
   },
   {
     id: 'visual', role: 'K3',
     name: 'Визуал',
-    desc: 'Насколько дизайн аккуратный и системный.',
-    hint: '1 — хаотичный, 5 — системный'
+    desc: 'Насколько дизайн аккуратный и&nbsp;системный.',
+    hint: '1&nbsp;— хаотичный, 5&nbsp;— системный'
   },
   {
     id: 'idea', role: 'Идея',
     name: 'Идея',
-    desc: 'Насколько сильна визуальная метафора в дизайне.',
-    hint: '1 — нет метафоры, 5 — сильная метафора'
+    desc: 'Насколько сильна визуальная метафора в&nbsp;дизайне.',
+    hint: '1&nbsp;— нет метафоры, 5&nbsp;— сильная метафора'
   }
 ];
 
@@ -673,6 +830,12 @@ let attemptedSubmit = false;
 
 // ── FETCH POST METADATA FROM SERVER ─────────────
 async function fetchPostData() {
+  // Apply URL params as fallback (useful for testing and deep-linked previews)
+  const nameParam     = params.get('name');
+  const subtitleParam = params.get('subtitle');
+  if (nameParam)     document.getElementById('header-name').textContent     = nameParam;
+  if (subtitleParam) document.getElementById('header-subtitle').textContent = subtitleParam;
+
   try {
     const res  = await fetch(`${SERVER}/post/${POST_ID}`);
     const data = await res.json();
@@ -681,14 +844,17 @@ async function fetchPostData() {
       if (data.subtitle) document.getElementById('header-subtitle').textContent = data.subtitle;
     }
   } catch (e) {
-    // server unavailable or no data — keep defaults
+    // server unavailable — URL params or defaults remain
   }
 }
 
-// ── SCROLL → COLLAPSE HEADER ─────────────────────
-const header = document.getElementById('main-header');
+// ── SCROLL → COLLAPSE HEADER + GRADIENT ──────────
+const header  = document.getElementById('main-header');
+const bottomBar = document.querySelector('.bottom-bar');
 window.addEventListener('scroll', () => {
   header.classList.toggle('collapsed', window.scrollY > 60);
+  const atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 8;
+  bottomBar.classList.toggle('no-gradient', atBottom);
 }, { passive: true });
 
 // ── INIT ─────────────────────────────────────────
@@ -703,9 +869,16 @@ function init() {
   // Fill user info
   const user = tg?.initDataUnsafe?.user;
   if (user) {
-    const name = `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`;
-    document.getElementById('user-name').textContent   = name;
-    document.getElementById('user-avatar').textContent = name[0].toUpperCase();
+    const name     = `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`;
+    const initial  = name[0].toUpperCase();
+    document.getElementById('user-name').textContent = name;
+    const avatarEl = document.getElementById('user-avatar');
+    if (user.photo_url) {
+      avatarEl.innerHTML = `<img src="${user.photo_url}" alt="${initial}"
+        onerror="this.parentElement.innerHTML='${initial}'">`;
+    } else {
+      avatarEl.textContent = initial;
+    }
   }
 
   // Restore saved vote
@@ -728,8 +901,7 @@ function renderCriteria() {
   document.getElementById('criteria-list').innerHTML = CRITERIA.map(c => `
     <div class="crit-block" id="block-${c.id}">
       <div class="crit-name">${c.name}</div>
-      <div class="crit-desc">${c.desc}</div>
-      <div class="crit-hint">${c.hint}</div>
+      <div class="crit-text">${c.desc}<br>${c.hint}</div>
       <div class="score-row">
         ${[1,2,3,4,5].map(n => mkBtn(c.id, n)).join('')}
       </div>
@@ -755,6 +927,16 @@ function selectScore(id, val) {
 
 function onCommentInput(el) {
   comment = el.value;
+  const len  = el.value.length;
+  const over = len > 1000;
+  const hint = document.getElementById('char-hint');
+  document.getElementById('textarea-wrap').classList.toggle('error', over);
+  if (over) {
+    hint.innerHTML = `<span>Слишком длинный текст</span><span>${len}&nbsp;/&nbsp;1000</span>`;
+    hint.style.display = 'flex';
+  } else {
+    hint.style.display = 'none';
+  }
 }
 
 // ── SCORE FORMULA (1–5 scale, range 3–17) ────────
@@ -783,10 +965,11 @@ function updateLiveScore() {
 }
 
 const SYSTEM_LINK_HTML = `<span class="bottom-system-link" onclick="openModal()">
-    Система оценки
-    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"
+    <span>Система оценки</span>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.25"
          stroke-linecap="round" stroke-linejoin="round">
-      <path d="M7 1h4v4M11 1L6.5 5.5M5 2H2a1 1 0 00-1 1v7a1 1 0 001 1h7a1 1 0 001-1V7"/>
+      <line x1="2" y1="10" x2="10" y2="2"/>
+      <polyline points="5,2 10,2 10,7"/>
     </svg>
   </span>`;
 
@@ -801,19 +984,24 @@ function updateSubmitState() {
   // Show score slot only once any criterion is picked (or in edit mode)
   headerScore.classList.toggle('hidden', !anyFilled && !hasVoted);
 
+  const bodyEl = document.querySelector('.body');
   if (hasVoted) {
     btn.disabled            = false;
     btn.textContent         = 'Обновить оценку';
     deleteBtn.style.display = 'block';
     hint.innerHTML          = SYSTEM_LINK_HTML;
+    bodyEl.style.paddingBottom = 'calc(210px + env(safe-area-inset-bottom, 20px))';
   } else {
     // Button always enabled — error shown only after a failed submit attempt
     btn.disabled            = false;
+    bodyEl.style.paddingBottom = 'calc(150px + env(safe-area-inset-bottom, 20px))';
     btn.textContent         = 'Опубликовать оценку';
     deleteBtn.style.display = 'none';
-    hint.innerHTML = (attemptedSubmit && !allFilled)
+    const hasError = attemptedSubmit && !allFilled;
+    hint.innerHTML = hasError
       ? `<span class="bottom-error">Поставьте оценки по всем критериям</span>`
       : SYSTEM_LINK_HTML;
+    document.getElementById('textarea-wrap').classList.toggle('error', hasError);
   }
 }
 
@@ -832,39 +1020,96 @@ async function sendToServer(data) {
   }
 }
 
+// ── FLOWER SHAPE MORPH ────────────────────────────
+// r(θ,t) = (R_avg - A_max/2·t) + A_max·t·cos²(4θ)
+// At t=0: perfect circle of radius R_avg
+// At t=1: badge with 8 outward bumps, range [R_avg-A/2, R_avg+A/2]
+const FLOWER_R = 79;   // average / circle radius
+const FLOWER_A = 11;   // total amplitude at full morph
+const FLOWER_PTS = 96;
+
+function makeFlowerPath(t) {
+  const cx = 91, cy = 91;
+  const A     = FLOWER_A * t;
+  const R_min = FLOWER_R - A / 2;
+  let d = '';
+  for (let i = 0; i < FLOWER_PTS; i++) {
+    const θ   = (i / FLOWER_PTS) * Math.PI * 2 - Math.PI / 2;
+    const cos2 = Math.pow(Math.cos(4 * θ), 2); // 8 outward bumps
+    const r   = R_min + A * cos2;
+    const x   = (cx + r * Math.cos(θ)).toFixed(2);
+    const y   = (cy + r * Math.sin(θ)).toFixed(2);
+    d += i === 0 ? `M ${x},${y}` : ` L ${x},${y}`;
+  }
+  return d + ' Z';
+}
+
 // ── SUCCESS SCORE ANIMATION ───────────────────────
 function showSuccessScore(target) {
-  const el = document.getElementById('success-score');
+  const el      = document.getElementById('success-score');
+  const svgEl   = document.getElementById('score-svg');
+  const spinner = document.getElementById('score-spinner');
+  const shapePath = document.getElementById('score-shape');
+
   el.textContent = '0';
+  spinner.classList.remove('spinning');
+  shapePath.setAttribute('d', makeFlowerPath(0));
 
-  // Fade-in the number
-  requestAnimationFrame(() => el.classList.add('visible'));
+  requestAnimationFrame(() => {
+    el.classList.add('visible');
+    svgEl.classList.add('visible');
+  });
 
-  // Count up from 0 → target over ~700ms with ease-out
-  const duration = target > 10 ? 700 : 450;
+  // Android "emphasized spring" easing — elastic-out with slight overshoot
+  function springEase(p) {
+    if (p <= 0) return 0;
+    if (p >= 1) return 1;
+    return Math.pow(2, -8 * p) * Math.sin((p * 8 - 0.75) * (2 * Math.PI / 3)) + 1;
+  }
+
+  const duration = 620;
   const start    = performance.now();
   function step(now) {
     const p  = Math.min((now - start) / duration, 1);
-    const ep = 1 - Math.pow(1 - p, 3);          // ease-out cubic
-    el.textContent = Math.round(ep * target);
-    if (p < 1) requestAnimationFrame(step);
-    else el.textContent = target;
+    const ep = springEase(p);
+    el.textContent = Math.round(Math.min(ep, 1) * target);
+    shapePath.setAttribute('d', makeFlowerPath(Math.max(0, ep)));
+    if (p < 1) {
+      requestAnimationFrame(step);
+    } else {
+      el.textContent = target;
+      shapePath.setAttribute('d', makeFlowerPath(1));
+      spinner.classList.add('spinning');
+    }
   }
-  // Start counting after a brief pause so fade-in is visible first
   setTimeout(() => requestAnimationFrame(step), 80);
 }
 
 // ── SUBMIT ────────────────────────────────────────
+let submitting = false;
+
 async function handleSubmit() {
+  if (submitting) return;
+
   const allFilled = CRITERIA.every(c => scores[c.id]);
   if (!allFilled) {
     attemptedSubmit = true;
     updateSubmitState();
-    hapticNotif('error');   // вибро-ошибка
+    hapticNotif('error');
+    return;
+  }
+  if (comment.length > 1000) {
+    document.getElementById('textarea-wrap').classList.add('error');
+    hapticNotif('error');
     return;
   }
   const final = calcScore();
   if (!final) return;
+
+  submitting = true;
+  const btn = document.getElementById('submit-btn');
+  if (btn) btn.disabled = true;
+
   attemptedSubmit = false;
   hapticNotif('success');
 
@@ -885,29 +1130,39 @@ async function handleSubmit() {
     action: hasVoted ? 'update' : 'new'
   };
 
-  const result = await sendToServer(rating);
+  try {
+    const result = await sendToServer(rating);
+    rating.commentId = result?.commentId || null;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(rating));
+    hasVoted = true;
 
-  rating.commentId = result?.commentId || null;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(rating));
-  hasVoted = true;
-
-  // Show success page with count-up animation
-  document.getElementById('page-rating').classList.remove('active');
-  document.getElementById('page-success').classList.add('active');
-  showSuccessScore(final);
+    // Show success page with count-up animation
+    document.getElementById('page-rating').classList.remove('active');
+    document.getElementById('page-success').classList.add('active');
+    showSuccessScore(final);
+  } finally {
+    submitting = false;
+    if (btn) btn.disabled = false;
+  }
 }
 
 // ── EDIT / DELETE ─────────────────────────────────
 function editRating() {
   haptic('medium');
-  // Reset success score so animation replays on next submit
-  const scoreEl = document.getElementById('success-score');
+  const scoreEl   = document.getElementById('success-score');
+  const svgEl     = document.getElementById('score-svg');
+  const spinner   = document.getElementById('score-spinner');
+  const shapePath = document.getElementById('score-shape');
   scoreEl.classList.remove('visible');
   scoreEl.textContent = '0';
+  svgEl.classList.remove('visible');
+  spinner.classList.remove('spinning');
+  shapePath.setAttribute('d', '');
 
   document.getElementById('page-success').classList.remove('active');
   document.getElementById('page-rating').classList.add('active');
   window.scrollTo(0, 0);
+  updateSubmitState();
 }
 
 async function deleteRating() {

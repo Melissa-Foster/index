@@ -104,7 +104,15 @@ def tg(method, data):
             pass
         return None
 
-def tg_file(method, fields, file_field, file_bytes, filename="photo.jpg"):
+def is_video(data: bytes) -> bool:
+    """Detect video by magic bytes (MP4/MOV/AVI)."""
+    if len(data) > 12 and data[4:8] == b"ftyp":
+        return True
+    if data[:4] == b"RIFF" and len(data) > 11 and data[8:11] == b"AVI":
+        return True
+    return False
+
+def tg_file(method, fields, file_field, file_bytes, filename="file", content_type="image/jpeg"):
     """Send multipart/form-data request to Telegram (for file uploads)."""
     boundary = b"----TGFileBoundary"
     parts = bytearray()
@@ -114,7 +122,7 @@ def tg_file(method, fields, file_field, file_bytes, filename="photo.jpg"):
         parts += str(v).encode() + b"\r\n"
     parts += b"--" + boundary + b"\r\n"
     parts += f'Content-Disposition: form-data; name="{file_field}"; filename="{filename}"\r\n'.encode()
-    parts += b"Content-Type: image/jpeg\r\n\r\n"
+    parts += f"Content-Type: {content_type}\r\n\r\n".encode()
     parts += file_bytes + b"\r\n"
     parts += b"--" + boundary + b"--\r\n"
     req = urllib.request.Request(
@@ -279,13 +287,18 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
     2. Send rating button as a separate channel message.
     SLUG_MAP[slug] stores channel_msg_id, button_msg_id, button_text, votes, name, subtitle, photo_file_id.
     """
-    # Step 1: publish photo with no inline keyboard
+    # Step 1: publish photo/video with no inline keyboard
     if photo_bytes:
-        res = tg_file("sendPhoto", {
+        video = is_video(photo_bytes)
+        tg_method  = "sendVideo" if video else "sendPhoto"
+        tg_field   = "video"     if video else "photo"
+        tg_ctype   = "video/mp4" if video else "image/jpeg"
+        tg_fname   = "video.mp4" if video else "photo.jpg"
+        res = tg_file(tg_method, {
             "chat_id":    CHANNEL_ID,
             "caption":    caption,
             "parse_mode": parse_mode,
-        }, "photo", photo_bytes)
+        }, tg_field, photo_bytes, filename=tg_fname, content_type=tg_ctype)
     else:
         res = tg("sendPhoto", {
             "chat_id":    CHANNEL_ID,
@@ -294,14 +307,17 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
             "parse_mode": parse_mode,
         })
     if not res or not res.get("ok"):
-        print(f"sendPhoto failed: {res}")
+        print(f"send media failed: {res}")
         return None
 
     photo_msg_id = res["result"]["message_id"]
 
-    # Extract the largest photo's file_id for the proxy endpoint
+    # Extract file_id for the proxy endpoint (photo or video thumbnail)
     photos = res["result"].get("photo", [])
-    photo_file_id = photos[-1]["file_id"] if photos else ""
+    video_obj = res["result"].get("video", {})
+    photo_file_id = (photos[-1]["file_id"] if photos
+                     else video_obj.get("thumb", {}).get("file_id", "")
+                     or video_obj.get("file_id", ""))
 
     # Step 2: send button message
     button_url = f"{MINI_APP_URL}?startapp={slug}"
@@ -351,8 +367,8 @@ ADMIN_FORM = """<!DOCTYPE html>
   <input name="subtitle" required placeholder="Сайт, релиз 2026">
   <label>Фото для мини-апп (загрузить файл — jpg/png)</label>
   <input name="photo_file" type="file" accept="image/*">
-  <label>Фото поста (загрузить файл — jpg/png)</label>
-  <input name="post_photo" type="file" accept="image/*" required>
+  <label>Фото или видео поста (jpg/png/mp4/mov)</label>
+  <input name="post_photo" type="file" accept="image/*,video/*" required>
   <label>Подпись (Markdown: *жирный*, _курсив_, [текст](https://url))</label>
   <textarea name="caption" rows="6" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание...\n\n[Открыть сайт](https://sber.ru)"></textarea>
   <label>Текст кнопки оценки</label>

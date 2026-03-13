@@ -112,7 +112,8 @@ def is_video(data: bytes) -> bool:
         return True
     return False
 
-def tg_file(method, fields, file_field, file_bytes, filename="file", content_type="image/jpeg"):
+def tg_file(method, fields, file_field, file_bytes, filename="file", content_type="image/jpeg",
+            thumb_bytes=None):
     """Send multipart/form-data request to Telegram (for file uploads)."""
     boundary = b"----TGFileBoundary"
     parts = bytearray()
@@ -124,6 +125,11 @@ def tg_file(method, fields, file_field, file_bytes, filename="file", content_typ
     parts += f'Content-Disposition: form-data; name="{file_field}"; filename="{filename}"\r\n'.encode()
     parts += f"Content-Type: {content_type}\r\n\r\n".encode()
     parts += file_bytes + b"\r\n"
+    if thumb_bytes:
+        parts += b"--" + boundary + b"\r\n"
+        parts += b'Content-Disposition: form-data; name="thumbnail"; filename="thumb.jpg"\r\n'
+        parts += b"Content-Type: image/jpeg\r\n\r\n"
+        parts += thumb_bytes + b"\r\n"
     parts += b"--" + boundary + b"--\r\n"
     req = urllib.request.Request(
         f"{API}/{method}",
@@ -281,7 +287,7 @@ def handle_telegram_update(update):
 # ── post publisher ────────────────────────────────────────────────────────────
 
 def publish_post(photo, caption, slug, button_text="Оценить дизайн ✦",
-                 parse_mode="Markdown", name="", subtitle="", photo_bytes=None):
+                 parse_mode="Markdown", name="", subtitle="", photo_bytes=None, thumb_bytes=None):
     """
     1. Publish photo (no button) — comment section stays visible.
     2. Send rating button as a separate channel message.
@@ -298,7 +304,8 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
             "chat_id":    CHANNEL_ID,
             "caption":    caption,
             "parse_mode": parse_mode,
-        }, tg_field, photo_bytes, filename=tg_fname, content_type=tg_ctype)
+        }, tg_field, photo_bytes, filename=tg_fname, content_type=tg_ctype,
+            thumb_bytes=thumb_bytes if video else None)
     else:
         res = tg("sendPhoto", {
             "chat_id":    CHANNEL_ID,
@@ -369,6 +376,8 @@ ADMIN_FORM = """<!DOCTYPE html>
   <input name="photo_file" type="file" accept="image/*">
   <label>Фото или видео поста (jpg/png/mp4/mov)</label>
   <input name="post_photo" type="file" accept="image/*,video/*" required>
+  <label>Обложка видео — thumbnail (jpg/png, только для видео)</label>
+  <input name="video_thumb" type="file" accept="image/*">
   <label>Подпись (Markdown: *жирный*, _курсив_, [текст](https://url))</label>
   <textarea name="caption" rows="6" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание...\n\n[Открыть сайт](https://sber.ru)"></textarea>
   <label>Текст кнопки оценки</label>
@@ -525,7 +534,8 @@ class Handler(BaseHTTPRequestHandler):
                     pf.write(photo_file_data)
 
             msg_id = publish_post(None, caption, slug, button_text,
-                                  name=name, subtitle=subtitle, photo_bytes=post_photo_data)
+                                  name=name, subtitle=subtitle, photo_bytes=post_photo_data,
+                                  thumb_bytes=files.get("video_thumb") if "multipart/form-data" in ct else None)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

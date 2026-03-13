@@ -157,7 +157,19 @@ def update_average(slug):
     if votes:
         avg   = sum(votes.values()) / len(votes)
         count = len(votes)
-        text  = f"⭐ {round(avg)}/17 · {count} {_vote_word(count)}"
+        # Per-criterion averages
+        scores_by_user = entry.get("scores_by_user", {})
+        crit_line = ""
+        if scores_by_user:
+            keys = [("content", "Смысл"), ("usability", "Удобство"), ("visual", "Визуал"), ("idea", "Идея")]
+            parts = []
+            for key, label in keys:
+                vals = [s[key] for s in scores_by_user.values() if key in s]
+                if vals:
+                    parts.append(f"{label} {round(sum(vals)/len(vals))}")
+            if parts:
+                crit_line = "\n" + " · ".join(parts)
+        text = f"⭐ <b>{round(avg)}/17</b> · {count} {_vote_word(count)}{crit_line}"
     else:
         text = "·"
 
@@ -165,6 +177,7 @@ def update_average(slug):
         "chat_id":      CHANNEL_ID,
         "message_id":   button_msg_id,
         "text":         text,
+        "parse_mode":   "HTML",
         "reply_markup": {
             "inline_keyboard": [[{"text": button_text, "url": button_url}]]
         }
@@ -534,8 +547,9 @@ class Handler(BaseHTTPRequestHandler):
 
         # Track vote, comment_id, and update average
         if entry is not None:
-            entry.setdefault("votes", {})[username]       = final
-            entry.setdefault("comment_ids", {})[username] = comment_msg_id
+            entry.setdefault("votes", {})[username]          = final
+            entry.setdefault("scores_by_user", {})[username] = data.get("scores", {})
+            entry.setdefault("comment_ids", {})[username]    = comment_msg_id
             save_slug_map(SLUG_MAP)
             update_average(post_id)
 

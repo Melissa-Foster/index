@@ -104,6 +104,35 @@ def tg(method, data):
             pass
         return None
 
+def tg_file(method, fields, file_field, file_bytes, filename="photo.jpg"):
+    """Send multipart/form-data request to Telegram (for file uploads)."""
+    boundary = b"----TGFileBoundary"
+    parts = bytearray()
+    for k, v in fields.items():
+        parts += b"--" + boundary + b"\r\n"
+        parts += f'Content-Disposition: form-data; name="{k}"\r\n\r\n'.encode()
+        parts += str(v).encode() + b"\r\n"
+    parts += b"--" + boundary + b"\r\n"
+    parts += f'Content-Disposition: form-data; name="{file_field}"; filename="{filename}"\r\n'.encode()
+    parts += b"Content-Type: image/jpeg\r\n\r\n"
+    parts += file_bytes + b"\r\n"
+    parts += b"--" + boundary + b"--\r\n"
+    req = urllib.request.Request(
+        f"{API}/{method}",
+        data=bytes(parts),
+        headers={"Content-Type": f"multipart/form-data; boundary={boundary.decode()}"}
+    )
+    try:
+        with urllib.request.urlopen(req) as r:
+            return json.loads(r.read())
+    except Exception as e:
+        print("TG file error:", e)
+        try:
+            print("TG file error body:", e.read().decode())
+        except Exception:
+            pass
+        return None
+
 # ── comment formatting ────────────────────────────────────────────────────────
 
 def score_bar(val, max_val=5):
@@ -172,7 +201,6 @@ def update_average(slug):
         count = len(votes)
         # Per-criterion averages
         scores_by_user = entry.get("scores_by_user", {})
-        print(f"[AVG] slug={slug} votes={votes} scores_by_user={scores_by_user}")
         crit_line = ""
         if scores_by_user:
             keys = [("content", "Смысл"), ("usability", "Удобство"), ("visual", "Визуал"), ("idea", "Идея")]
@@ -245,19 +273,26 @@ def handle_telegram_update(update):
 # ── post publisher ────────────────────────────────────────────────────────────
 
 def publish_post(photo, caption, slug, button_text="Оценить дизайн ✦",
-                 parse_mode="Markdown", name="", subtitle=""):
+                 parse_mode="Markdown", name="", subtitle="", photo_bytes=None):
     """
     1. Publish photo (no button) — comment section stays visible.
     2. Send rating button as a separate channel message.
     SLUG_MAP[slug] stores channel_msg_id, button_msg_id, button_text, votes, name, subtitle, photo_file_id.
     """
     # Step 1: publish photo with no inline keyboard
-    res = tg("sendPhoto", {
-        "chat_id":    CHANNEL_ID,
-        "photo":      photo,
-        "caption":    caption,
-        "parse_mode": parse_mode,
-    })
+    if photo_bytes:
+        res = tg_file("sendPhoto", {
+            "chat_id":    CHANNEL_ID,
+            "caption":    caption,
+            "parse_mode": parse_mode,
+        }, "photo", photo_bytes)
+    else:
+        res = tg("sendPhoto", {
+            "chat_id":    CHANNEL_ID,
+            "photo":      photo,
+            "caption":    caption,
+            "parse_mode": parse_mode,
+        })
     if not res or not res.get("ok"):
         print(f"sendPhoto failed: {res}")
         return None
@@ -318,18 +353,14 @@ ADMIN_FORM = """<!DOCTYPE html>
   <input name="subtitle" required placeholder="Сайт, релиз 2026">
   <label>Фото для мини-апп (загрузить файл — jpg/png)</label>
   <input name="photo_file" type="file" accept="image/*">
-  <label>Фото поста (Telegram file_id или https:// URL)</label>
-  <input name="photo" required placeholder="AgAC... или https://example.com/photo.jpg">
+  <label>Фото поста (загрузить файл — jpg/png)</label>
+  <input name="post_photo" type="file" accept="image/*" required>
   <label>Подпись (Markdown: *жирный*, _курсив_, [текст](https://url))</label>
   <textarea name="caption" rows="6" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание...\n\n[Открыть сайт](https://sber.ru)"></textarea>
   <label>Текст кнопки оценки</label>
   <input name="button_text" required placeholder="Оценить дизайн ✦" value="Оценить дизайн ✦">
   <button type="submit">Опубликовать</button>
 </form>
-<h3>SLUG_MAP</h3>
-<pre>{slug_map}</pre>
-<h3>POST_MAP (channel_msg_id → discussion_thread_id)</h3>
-<pre>{post_map}</pre>
 </body></html>"""
 
 # ── HTTP handler ──────────────────────────────────────────────────────────────
@@ -409,11 +440,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            html = ADMIN_FORM.format(
-                slug_map=json.dumps(SLUG_MAP, indent=2, ensure_ascii=False),
-                post_map=json.dumps(POST_MAP, indent=2),
-            )
-            self.wfile.write(html.encode())
+            self.wfile.write(ADMIN_FORM.encode())
         else:
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -443,10 +470,10 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/publish":
             ct = self.headers.get("Content-Type", "")
             photo_file_data = None
+            post_photo_data = None
             if "multipart/form-data" in ct:
                 fields, files = parse_multipart(body, ct)
                 def fval(k): return fields.get(k, "").strip()
-                photo       = fval("photo")
                 caption     = fval("caption")
                 slug        = fval("slug")
                 button_text = fval("button_text") or "Оценить дизайн ✦"
@@ -454,9 +481,10 @@ class Handler(BaseHTTPRequestHandler):
                 subtitle    = fval("subtitle")
                 if "photo_file" in files:
                     photo_file_data = files["photo_file"]
+                if "post_photo" in files:
+                    post_photo_data = files["post_photo"]
             elif "application/json" in ct:
                 d = json.loads(body)
-                photo       = d.get("photo",       "").strip()
                 caption     = d.get("caption",     "").strip()
                 slug        = d.get("slug",        "").strip()
                 button_text = d.get("button_text", "Оценить дизайн ✦").strip() or "Оценить дизайн ✦"
@@ -464,18 +492,17 @@ class Handler(BaseHTTPRequestHandler):
                 subtitle    = d.get("subtitle",    "").strip()
             else:
                 d = dict(urllib.parse.parse_qsl(body.decode()))
-                photo       = d.get("photo",       "").strip()
                 caption     = d.get("caption",     "").strip()
                 slug        = d.get("slug",        "").strip()
                 button_text = d.get("button_text", "Оценить дизайн ✦").strip() or "Оценить дизайн ✦"
                 name        = d.get("name",        "").strip()
                 subtitle    = d.get("subtitle",    "").strip()
-            if not photo or not caption or not slug:
+            if not caption or not slug or not post_photo_data:
                 self.send_response(400)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps({"ok": False,
-                    "error": "photo, caption and slug are required"}).encode())
+                    "error": "post_photo file, caption and slug are required"}).encode())
                 return
             # Save uploaded thumbnail to disk for /photo/{slug}
             if photo_file_data and slug:
@@ -483,8 +510,8 @@ class Handler(BaseHTTPRequestHandler):
                 with open(f"{DATA_DIR}/photos/{slug}", "wb") as pf:
                     pf.write(photo_file_data)
 
-            msg_id = publish_post(photo, caption, slug, button_text,
-                                  name=name, subtitle=subtitle)
+            msg_id = publish_post(None, caption, slug, button_text,
+                                  name=name, subtitle=subtitle, photo_bytes=post_photo_data)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

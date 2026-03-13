@@ -578,10 +578,8 @@ class Handler(BaseHTTPRequestHandler):
 
             # Publish in background so the form doesn't hang on large files
             def do_publish():
-                thumb = extract_video_thumbnail(post_photo_data) if is_video(post_photo_data) else None
                 publish_post(None, caption, slug, button_text,
-                             name=name, subtitle=subtitle, photo_bytes=post_photo_data,
-                             thumb_bytes=thumb)
+                             name=name, subtitle=subtitle, photo_bytes=post_photo_data)
             threading.Thread(target=do_publish, daemon=True).start()
 
             self.send_response(200)

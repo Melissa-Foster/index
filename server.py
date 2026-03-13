@@ -168,8 +168,9 @@ def update_average(slug):
                 if vals:
                     parts.append(f"{label} {round(sum(vals)/len(vals))}")
             if parts:
-                crit_line = "\n" + " · ".join(parts)
-        text = f"⭐ <b>{round(avg)}/17</b> · {count} {_vote_word(count)}{crit_line}"
+                crit_line = " | " + " · ".join(parts)
+        first_line = f"⭐ <b>{round(avg)}/17</b>{crit_line}"
+        text = f"{first_line}\n{count} {_vote_word(count)}"
     else:
         text = "·"
 

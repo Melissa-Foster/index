@@ -257,9 +257,8 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
     # Step 2: send button message (text is middle dot — invisible until first vote)
     button_url = f"{MINI_APP_URL}?startapp={slug}"
     res2 = tg("sendMessage", {
-        "chat_id":             CHANNEL_ID,
-        "text":                "·",
-        "reply_to_message_id": photo_msg_id,
+        "chat_id": CHANNEL_ID,
+        "text":    "·",
         "reply_markup": {
             "inline_keyboard": [[{"text": button_text, "url": button_url}]]
         }

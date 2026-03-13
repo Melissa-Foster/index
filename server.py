@@ -1,5 +1,5 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import json, urllib.request, urllib.parse, os, re
+import json, urllib.request, urllib.parse, os, re, threading
 
 def parse_multipart(body: bytes, content_type: str):
     """Parse multipart/form-data without the removed cgi module (Python 3.13+)."""
@@ -406,8 +406,21 @@ ADMIN_FORM = """<!DOCTYPE html>
   <textarea name="caption" rows="6" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание...\n\n[Открыть сайт](https://sber.ru)"></textarea>
   <label>Текст кнопки оценки</label>
   <input name="button_text" required placeholder="Оценить дизайн ✦" value="Оценить дизайн ✦">
-  <button type="submit">Опубликовать</button>
+  <button type="submit" id="btn">Опубликовать</button>
+  <p id="status" style="color:#0a0;font-weight:600;display:none">✅ Публикация запущена — пост появится в канале через несколько секунд</p>
 </form>
+<script>
+document.querySelector("form").addEventListener("submit", function(e) {
+  e.preventDefault();
+  var btn = document.getElementById("btn");
+  var status = document.getElementById("status");
+  btn.disabled = true; btn.textContent = "Публикуется...";
+  fetch("/publish", {method:"POST", body: new FormData(this)})
+    .then(function(r){ return r.json(); })
+    .then(function(){ status.style.display="block"; btn.textContent="Опубликовать"; btn.disabled=false; })
+    .catch(function(){ btn.textContent="Ошибка, попробуй ещё раз"; btn.disabled=false; });
+});
+</script>
 </body></html>"""
 
 # ── HTTP handler ──────────────────────────────────────────────────────────────
@@ -562,14 +575,19 @@ class Handler(BaseHTTPRequestHandler):
                 with open(f"{DATA_DIR}/photos/{slug}", "wb") as pf:
                     pf.write(photo_file_data)
 
-            msg_id = publish_post(None, caption, slug, button_text,
-                                  name=name, subtitle=subtitle, photo_bytes=post_photo_data,
-                                  thumb_bytes=extract_video_thumbnail(post_photo_data) if is_video(post_photo_data) else None)
+            # Publish in background so the form doesn't hang on large files
+            def do_publish():
+                thumb = extract_video_thumbnail(post_photo_data) if is_video(post_photo_data) else None
+                publish_post(None, caption, slug, button_text,
+                             name=name, subtitle=subtitle, photo_bytes=post_photo_data,
+                             thumb_bytes=thumb)
+            threading.Thread(target=do_publish, daemon=True).start()
+
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
-            self.wfile.write(json.dumps({"ok": bool(msg_id),
-                "message_id": msg_id, "slug": slug}).encode())
+            self.wfile.write(json.dumps({"ok": True, "slug": slug,
+                "message": "публикация запущена, пост появится через несколько секунд"}).encode())
             return
 
         # ── Rating from mini-app ──────────────────────────────────────────────

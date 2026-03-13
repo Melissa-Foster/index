@@ -206,7 +206,7 @@ def format_comment(r):
     lines = [
         f"👤 {mention}", "",
         f"⭐ {final}/17", "",
-        criteria,
+        f"<code>{criteria}</code>",
     ]
     if comment:
         lines += ["", f"💬 {_esc(comment)}"]

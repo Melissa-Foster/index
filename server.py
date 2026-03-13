@@ -104,6 +104,30 @@ def tg(method, data):
             pass
         return None
 
+def extract_video_thumbnail(video_bytes: bytes) -> bytes | None:
+    """Extract a frame from video at 1s using ffmpeg, return JPEG bytes."""
+    import subprocess, tempfile
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as vf:
+            vf.write(video_bytes)
+            vpath = vf.name
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tf:
+            tpath = tf.name
+        subprocess.run(
+            ["ffmpeg", "-y", "-ss", "1", "-i", vpath, "-frames:v", "1", "-q:v", "2", tpath],
+            capture_output=True, timeout=30
+        )
+        if os.path.exists(tpath) and os.path.getsize(tpath) > 0:
+            with open(tpath, "rb") as f:
+                return f.read()
+    except Exception as e:
+        print(f"thumbnail extraction failed: {e}")
+    finally:
+        for p in [vpath, tpath]:
+            try: os.unlink(p)
+            except: pass
+    return None
+
 def is_video(data: bytes) -> bool:
     """Detect video by magic bytes (MP4/MOV/AVI)."""
     if len(data) > 12 and data[4:8] == b"ftyp":
@@ -376,8 +400,6 @@ ADMIN_FORM = """<!DOCTYPE html>
   <input name="photo_file" type="file" accept="image/*">
   <label>Фото или видео поста (jpg/png/mp4/mov)</label>
   <input name="post_photo" type="file" accept="image/*,video/*" required>
-  <label>Обложка видео — thumbnail (jpg/png, только для видео)</label>
-  <input name="video_thumb" type="file" accept="image/*">
   <label>Подпись (Markdown: *жирный*, _курсив_, [текст](https://url))</label>
   <textarea name="caption" rows="6" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание...\n\n[Открыть сайт](https://sber.ru)"></textarea>
   <label>Текст кнопки оценки</label>
@@ -535,7 +557,7 @@ class Handler(BaseHTTPRequestHandler):
 
             msg_id = publish_post(None, caption, slug, button_text,
                                   name=name, subtitle=subtitle, photo_bytes=post_photo_data,
-                                  thumb_bytes=files.get("video_thumb") if "multipart/form-data" in ct else None)
+                                  thumb_bytes=extract_video_thumbnail(post_photo_data) if is_video(post_photo_data) else None)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

@@ -36,8 +36,10 @@ DISCUSSION_ID = os.environ.get("DISCUSSION_ID", "")
 MINI_APP_URL  = os.environ.get("MINI_APP_URL", "https://t.me/designindexxx_bot/rate")
 API           = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
-MAP_FILE  = "/tmp/post_map.json"   # channel_post_id  → discussion_thread_id
-SLUG_FILE = "/tmp/slug_map.json"   # slug              → post entry dict
+DATA_DIR  = "/data"
+MAP_FILE  = f"{DATA_DIR}/post_map.json"   # channel_post_id  → discussion_thread_id
+SLUG_FILE = f"{DATA_DIR}/slug_map.json"   # slug              → post entry dict
+os.makedirs(DATA_DIR, exist_ok=True)
 
 # ── persistence ───────────────────────────────────────────────────────────────
 
@@ -314,7 +316,7 @@ class Handler(BaseHTTPRequestHandler):
             slug  = self.path[7:].split("?")[0]
 
             # 1. Locally uploaded file (from admin form)
-            local_path = f"/tmp/photos/{slug}"
+            local_path = f"{DATA_DIR}/photos/{slug}"
             if os.path.exists(local_path):
                 with open(local_path, "rb") as pf:
                     img_bytes = pf.read()
@@ -449,8 +451,8 @@ class Handler(BaseHTTPRequestHandler):
                 return
             # Save uploaded thumbnail to disk for /photo/{slug}
             if photo_file_data and slug:
-                os.makedirs("/tmp/photos", exist_ok=True)
-                with open(f"/tmp/photos/{slug}", "wb") as pf:
+                os.makedirs(f"{DATA_DIR}/photos", exist_ok=True)
+                with open(f"{DATA_DIR}/photos/{slug}", "wb") as pf:
                     pf.write(photo_file_data)
 
             msg_id = publish_post(photo, caption, slug, button_text,

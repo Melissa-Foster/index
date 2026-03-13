@@ -170,7 +170,7 @@ def update_average(slug):
             if parts:
                 crit_line = " | " + " · ".join(parts)
         first_line = f"⭐ <b>{round(avg)}/17</b>{crit_line}"
-        text = f"{first_line}\n\n{count} {_vote_word(count)}"
+        text = f"{first_line}\n\u200b\n{count} {_vote_word(count)}"
     else:
         text = "·"
 

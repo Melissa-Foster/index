@@ -254,11 +254,11 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
     photos = res["result"].get("photo", [])
     photo_file_id = photos[-1]["file_id"] if photos else ""
 
-    # Step 2: send button message (text is middle dot — invisible until first vote)
+    # Step 2: send button message
     button_url = f"{MINI_APP_URL}?startapp={slug}"
     res2 = tg("sendMessage", {
         "chat_id": CHANNEL_ID,
-        "text":    "·",
+        "text":    "0 голосов",
         "reply_markup": {
             "inline_keyboard": [[{"text": button_text, "url": button_url}]]
         }

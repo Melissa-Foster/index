@@ -114,7 +114,8 @@ def extract_video_thumbnail(video_bytes: bytes):
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tf:
             tpath = tf.name
         subprocess.run(
-            ["ffmpeg", "-y", "-ss", "1", "-i", vpath, "-frames:v", "1", "-q:v", "2", tpath],
+            ["ffmpeg", "-y", "-ss", "1", "-i", vpath,
+             "-frames:v", "1", "-vf", "scale=320:-1", "-q:v", "2", tpath],
             capture_output=True, timeout=30
         )
         if os.path.exists(tpath) and os.path.getsize(tpath) > 0:

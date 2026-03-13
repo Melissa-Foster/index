@@ -172,6 +172,7 @@ def update_average(slug):
         count = len(votes)
         # Per-criterion averages
         scores_by_user = entry.get("scores_by_user", {})
+        print(f"[AVG] slug={slug} votes={votes} scores_by_user={scores_by_user}")
         crit_line = ""
         if scores_by_user:
             keys = [("content", "Смысл"), ("usability", "Удобство"), ("visual", "Визуал"), ("idea", "Идея")]

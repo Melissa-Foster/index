@@ -429,6 +429,8 @@ document.querySelector("form").addEventListener("submit", function(e) {
 <form id="repair-form">
   <label>Slug поста</label>
   <input id="repair-slug" required placeholder="sber">
+  <label>ID поста (необязательно — channel_msg_id, если комментарии не привязаны)</label>
+  <input id="repair-cmid" placeholder="100" type="number">
   <label>ID кнопки (необязательно — если кнопка сломана, укажи правильный message_id)</label>
   <input id="repair-bmid" placeholder="101" type="number">
   <button type="submit" id="repair-btn">Починить</button>
@@ -443,8 +445,10 @@ document.getElementById("repair-form").addEventListener("submit", function(e) {
   btn.disabled = true; btn.textContent = "Отправляю...";
   status.style.display = "none";
   var bmid = document.getElementById("repair-bmid").value.trim();
+  var cmid = document.getElementById("repair-cmid").value.trim();
   var payload = {slug: slug};
   if (bmid) payload.button_msg_id = bmid;
+  if (cmid) payload.channel_msg_id = cmid;
   fetch("/repair", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload)})
     .then(function(r){ return r.json(); })
     .then(function(d){
@@ -642,6 +646,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"ok": False, "error": f"slug '{slug}' not found"}).encode())
                 return
+            override_channel = d.get("channel_msg_id", "").strip()
+            if override_channel:
+                try:
+                    entry["channel_msg_id"] = int(override_channel)
+                    save_slug_map(SLUG_MAP)
+                except ValueError:
+                    pass
             override_id = d.get("button_msg_id", "").strip()
             if override_id:
                 try:

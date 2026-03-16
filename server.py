@@ -390,6 +390,12 @@ ADMIN_FORM = """<!DOCTYPE html>
           border-radius:6px;margin-top:12px;font-size:15px}
   small{color:#888;font-size:12px}
   pre{background:#111;color:#0f0;padding:12px;border-radius:6px;overflow:auto;font-size:12px}
+  #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+  #modal-overlay.open{display:flex}
+  #modal-box{background:#fff;border-radius:10px;padding:28px 32px;max-width:340px;width:90%;text-align:center}
+  #modal-box p{margin:0 0 20px;font-size:15px}
+  #modal-box .btns{display:flex;gap:12px;justify-content:center}
+  #modal-box .btns button{margin-top:0}
   h3{margin-top:32px}
 </style></head><body>
 <h2>Опубликовать пост в канале</h2>
@@ -471,15 +477,33 @@ document.getElementById("reset-btn").addEventListener("click", function() {
   var slug = document.getElementById("repair-slug").value.trim();
   var status = document.getElementById("repair-status");
   if (!slug) { status.style.color="#c00"; status.textContent="❌ Введи slug"; status.style.display="block"; return; }
-  fetch("/reset-votes", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({slug: slug})})
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      status.style.color = d.ok ? "#0a0" : "#c00";
-      status.textContent = d.ok ? "✅ Голоса сброшены" : "❌ " + (d.error || JSON.stringify(d));
-      status.style.display = "block";
-    });
+  document.getElementById("modal-msg").textContent = "Сбросить все голоса для «" + slug + "»?";
+  document.getElementById("modal-overlay").classList.add("open");
+  document.getElementById("modal-confirm").onclick = function() {
+    document.getElementById("modal-overlay").classList.remove("open");
+    fetch("/reset-votes", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({slug: slug})})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        status.style.color = d.ok ? "#0a0" : "#c00";
+        status.textContent = d.ok ? "✅ Голоса сброшены" : "❌ " + (d.error || JSON.stringify(d));
+        status.style.display = "block";
+      })
+      .catch(function(){ status.style.color="#c00"; status.textContent="❌ Ошибка сети"; status.style.display="block"; });
+  };
+  document.getElementById("modal-cancel").onclick = function() {
+    document.getElementById("modal-overlay").classList.remove("open");
+  };
 });
 </script>
+<div id="modal-overlay">
+  <div id="modal-box">
+    <p id="modal-msg"></p>
+    <div class="btns">
+      <button id="modal-cancel" style="background:#888">Отмена</button>
+      <button id="modal-confirm" style="background:#c00">Сбросить</button>
+    </div>
+  </div>
+</div>
 </body></html>"""
 
 # ── HTTP handler ──────────────────────────────────────────────────────────────

@@ -469,9 +469,8 @@ document.getElementById("repair-form").addEventListener("submit", function(e) {
 });
 document.getElementById("reset-btn").addEventListener("click", function() {
   var slug = document.getElementById("repair-slug").value.trim();
-  if (!slug) { alert("Введи slug"); return; }
-  if (!confirm("Сбросить все голоса для \"" + slug + "\"?")) return;
   var status = document.getElementById("repair-status");
+  if (!slug) { status.style.color="#c00"; status.textContent="❌ Введи slug"; status.style.display="block"; return; }
   fetch("/reset-votes", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({slug: slug})})
     .then(function(r){ return r.json(); })
     .then(function(d){

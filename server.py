@@ -394,6 +394,14 @@ ADMIN_FORM = """<!DOCTYPE html>
 </style></head><body>
 <h2>Опубликовать пост в канале</h2>
 <form method="POST" action="/publish" enctype="multipart/form-data">
+  <h3 style="margin-top:16px">Пост в канале</h3>
+  <label>Фото или видео поста (jpg/png/mp4/mov) — необязательно</label>
+  <input name="post_photo" type="file" accept="image/*,video/*">
+  <label>Подпись (Markdown: *жирный*, _курсив_, [текст](https://url))</label>
+  <textarea name="caption" rows="6" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание...\n\n[Открыть сайт](https://sber.ru)"></textarea>
+  <label>Текст кнопки оценки</label>
+  <input name="button_text" required placeholder="Оценить дизайн ✦" value="Оценить дизайн ✦">
+  <h3>Мини-апп</h3>
   <label>Slug (короткий ID поста, напр: sber, yandex, tinkoff)</label>
   <input name="slug" required placeholder="sber" pattern="[a-z0-9_-]+" title="только латиница, цифры, _ и -">
   <label>Название (отображается в мини-апп)</label>
@@ -402,12 +410,6 @@ ADMIN_FORM = """<!DOCTYPE html>
   <input name="subtitle" required placeholder="Сайт, релиз 2026">
   <label>Фото для мини-апп (загрузить файл — jpg/png)</label>
   <input name="photo_file" type="file" accept="image/*">
-  <label>Фото или видео поста (jpg/png/mp4/mov) — необязательно</label>
-  <input name="post_photo" type="file" accept="image/*,video/*">
-  <label>Подпись (Markdown: *жирный*, _курсив_, [текст](https://url))</label>
-  <textarea name="caption" rows="6" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание...\n\n[Открыть сайт](https://sber.ru)"></textarea>
-  <label>Текст кнопки оценки</label>
-  <input name="button_text" required placeholder="Оценить дизайн ✦" value="Оценить дизайн ✦">
   <button type="submit" id="btn">Опубликовать</button>
   <p id="status" style="color:#0a0;font-weight:600;display:none">✅ Публикация запущена — пост появится в канале через несколько секунд</p>
 </form>
@@ -563,7 +565,8 @@ class Handler(BaseHTTPRequestHandler):
             status = (
                 f'<h3>SLUG_MAP <button onclick="navigator.clipboard.writeText(document.getElementById(\'slug-pre\').textContent)" style="font-size:12px;padding:2px 8px;cursor:pointer">📋</button></h3>'
                 f'<pre id="slug-pre" style="max-height:200px;overflow:auto">{slug_json}</pre>'
-                f"<h3>POST_MAP</h3><pre>{post_json}</pre>"
+                f'<h3>POST_MAP <button onclick="navigator.clipboard.writeText(document.getElementById(\'post-pre\').textContent)" style="font-size:12px;padding:2px 8px;cursor:pointer">📋</button></h3>'
+                f'<pre id="post-pre" style="max-height:200px;overflow:auto">{post_json}</pre>'
             )
             html = ADMIN_FORM.replace("</body></html>", status + "</body></html>")
             self.wfile.write(html.encode())

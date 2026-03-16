@@ -253,7 +253,7 @@ def update_average(slug):
         first_line = f"⭐ <b>{round(avg)}/17</b>{crit_line}"
         text = f"{first_line}\n{count} {_vote_word(count)}"
     else:
-        text = "·"
+        text = "0 голосов"
 
     res = tg("editMessageText", {
         "chat_id":      CHANNEL_ID,
@@ -558,9 +558,12 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
+            slug_json = json.dumps(SLUG_MAP, indent=2, ensure_ascii=False)
+            post_json = json.dumps(POST_MAP, indent=2)
             status = (
-                f"<h3>SLUG_MAP</h3><pre>{json.dumps(SLUG_MAP, indent=2, ensure_ascii=False)}</pre>"
-                f"<h3>POST_MAP</h3><pre>{json.dumps(POST_MAP, indent=2)}</pre>"
+                f'<h3>SLUG_MAP <button onclick="navigator.clipboard.writeText(document.getElementById(\'slug-pre\').textContent)" style="font-size:12px;padding:2px 8px;cursor:pointer">📋</button></h3>'
+                f'<pre id="slug-pre" style="max-height:200px;overflow:auto">{slug_json}</pre>'
+                f"<h3>POST_MAP</h3><pre>{post_json}</pre>"
             )
             html = ADMIN_FORM.replace("</body></html>", status + "</body></html>")
             self.wfile.write(html.encode())

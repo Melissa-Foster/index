@@ -684,46 +684,23 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 text = "·"
             markup = {"inline_keyboard": [[{"text": button_text, "url": button_url}]]}
-            # Try to edit existing message first (preserves position in channel)
-            edited = False
-            if button_msg_id:
-                res_edit = tg("editMessageText", {
-                    "chat_id":      CHANNEL_ID,
-                    "message_id":   button_msg_id,
-                    "text":         text,
-                    "parse_mode":   "HTML",
-                    "reply_markup": markup,
-                })
-                err = (res_edit or {}).get("description", "")
-                edited = bool(res_edit and (res_edit.get("ok") or "not modified" in err))
-                print(f"[repair] editMessageText slug={slug} msg={button_msg_id} ok={edited} resp={res_edit}")
-            if edited:
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.end_headers()
-                self.wfile.write(json.dumps({"ok": True, "action": "edited", "button_msg_id": button_msg_id}).encode())
-            else:
-                # Message deleted — send new one
-                res_new = tg("sendMessage", {
-                    "chat_id":    CHANNEL_ID,
-                    "text":       text,
-                    "parse_mode": "HTML",
-                    "reply_markup": markup,
-                })
-                if res_new and res_new.get("ok"):
-                    new_id = res_new["result"]["message_id"]
-                    entry["button_msg_id"] = new_id
-                    save_slug_map(SLUG_MAP)
-                    print(f"✅ Repaired button for slug={slug} new button_msg_id={new_id}")
-                    self.send_response(200)
-                    self.send_header("Content-Type", "application/json")
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"ok": True, "action": "created", "new_button_msg_id": new_id}).encode())
-                else:
-                    self.send_response(500)
-                    self.send_header("Content-Type", "application/json")
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"ok": False, "tg_error": res_new}).encode())
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            if not button_msg_id:
+                self.wfile.write(json.dumps({"ok": False, "error": "button_msg_id not set"}).encode())
+                return
+            res_edit = tg("editMessageText", {
+                "chat_id":      CHANNEL_ID,
+                "message_id":   button_msg_id,
+                "text":         text,
+                "parse_mode":   "HTML",
+                "reply_markup": markup,
+            })
+            err = (res_edit or {}).get("description", "")
+            ok = bool(res_edit and (res_edit.get("ok") or "not modified" in err))
+            print(f"[repair] editMessageText slug={slug} msg={button_msg_id} ok={ok} resp={res_edit}")
+            self.wfile.write(json.dumps({"ok": ok, "button_msg_id": button_msg_id, "tg": res_edit}).encode())
             return
 
         # ── Rating from mini-app ──────────────────────────────────────────────

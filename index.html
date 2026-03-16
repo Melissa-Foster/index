@@ -551,6 +551,14 @@ textarea::-webkit-scrollbar-thumb {
   transition: transform 0.34s cubic-bezier(0.32,0.72,0,1);
 }
 .modal-overlay.open .modal-sheet { transform: translateY(0); }
+.modal-overlay.open .modal-sheet.dragging { transition: none; }
+
+.modal-handle {
+  width: 36px; height: 4px;
+  background: rgba(0,0,0,0.15); border-radius: 2px;
+  margin: 12px auto 0;
+  flex-shrink: 0;
+}
 
 /* Header row: title + × */
 .modal-header {
@@ -732,7 +740,8 @@ textarea::-webkit-scrollbar-thumb {
      MODAL: SYSTEM INFO
 ══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="system-modal" onclick="maybeCloseModal(event)">
-  <div class="modal-sheet">
+  <div class="modal-sheet" id="modal-sheet">
+    <div class="modal-handle"></div>
 
     <!-- Sticky header -->
     <div class="modal-header">
@@ -1195,11 +1204,56 @@ async function deleteRating() {
 function closeMiniApp() { if (tg) tg.close(); }
 
 // ── MODAL ─────────────────────────────────────────
-function openModal()  { document.getElementById('system-modal').classList.add('open'); document.body.style.overflow = 'hidden'; }
-function closeModal() { document.getElementById('system-modal').classList.remove('open'); document.body.style.overflow = ''; }
+function openModal() {
+  document.getElementById('system-modal').classList.add('open');
+  // Lock background scroll only if modal content overflows
+  requestAnimationFrame(() => {
+    const content = document.querySelector('.modal-content');
+    if (content.scrollHeight > content.clientHeight + 4) {
+      document.body.style.overflow = 'hidden';
+    }
+  });
+}
+function closeModal() {
+  document.getElementById('system-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
 function maybeCloseModal(e) {
   if (e.target === document.getElementById('system-modal')) closeModal();
 }
+
+// ── SWIPE DOWN TO CLOSE MODAL ─────────────────────
+(function() {
+  const sheet = document.getElementById('modal-sheet');
+  let startY = 0, curY = 0, dragging = false;
+
+  sheet.addEventListener('touchstart', function(e) {
+    const content = sheet.querySelector('.modal-content');
+    // Only start swipe from handle/header, or when content is scrolled to top
+    const fromHandle = e.target.closest('.modal-handle, .modal-header');
+    if (!fromHandle && content.scrollTop > 0) return;
+    startY = e.touches[0].clientY;
+    curY = startY;
+    dragging = true;
+    sheet.classList.add('dragging');
+  }, { passive: true });
+
+  sheet.addEventListener('touchmove', function(e) {
+    if (!dragging) return;
+    curY = e.touches[0].clientY;
+    const delta = Math.max(0, curY - startY);
+    sheet.style.transform = `translateY(${delta}px)`;
+  }, { passive: true });
+
+  sheet.addEventListener('touchend', function() {
+    if (!dragging) return;
+    dragging = false;
+    sheet.classList.remove('dragging');
+    const delta = Math.max(0, curY - startY);
+    sheet.style.transform = '';
+    if (delta > 100) closeModal();
+  });
+})();
 
 init();
 </script>

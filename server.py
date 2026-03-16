@@ -429,6 +429,8 @@ document.querySelector("form").addEventListener("submit", function(e) {
 <form id="repair-form">
   <label>Slug поста</label>
   <input id="repair-slug" required placeholder="sber">
+  <label>ID кнопки (необязательно — если кнопка сломана, укажи правильный message_id)</label>
+  <input id="repair-bmid" placeholder="101" type="number">
   <button type="submit" id="repair-btn">Починить</button>
   <p id="repair-status" style="font-weight:600;display:none"></p>
 </form>
@@ -440,7 +442,10 @@ document.getElementById("repair-form").addEventListener("submit", function(e) {
   var status = document.getElementById("repair-status");
   btn.disabled = true; btn.textContent = "Отправляю...";
   status.style.display = "none";
-  fetch("/repair", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({slug: slug})})
+  var bmid = document.getElementById("repair-bmid").value.trim();
+  var payload = {slug: slug};
+  if (bmid) payload.button_msg_id = bmid;
+  fetch("/repair", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload)})
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (d.ok) {
@@ -637,7 +642,16 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"ok": False, "error": f"slug '{slug}' not found"}).encode())
                 return
-            button_msg_id = entry.get("button_msg_id")
+            override_id = d.get("button_msg_id", "").strip()
+            if override_id:
+                try:
+                    button_msg_id = int(override_id)
+                    entry["button_msg_id"] = button_msg_id
+                    save_slug_map(SLUG_MAP)
+                except ValueError:
+                    button_msg_id = entry.get("button_msg_id")
+            else:
+                button_msg_id = entry.get("button_msg_id")
             button_text   = entry.get("button_text", "Оценить дизайн ✦")
             button_url    = f"{MINI_APP_URL}?startapp={slug}"
             votes = entry.get("votes", {})

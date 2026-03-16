@@ -434,6 +434,7 @@ document.querySelector("form").addEventListener("submit", function(e) {
   <label>ID кнопки (необязательно — если кнопка сломана, укажи правильный message_id)</label>
   <input id="repair-bmid" placeholder="101" type="number">
   <button type="submit" id="repair-btn">Починить</button>
+  <button type="button" id="reset-btn" style="background:#c00;margin-left:8px">Сбросить голоса</button>
   <p id="repair-status" style="font-weight:600;display:none"></p>
 </form>
 <script>
@@ -463,6 +464,19 @@ document.getElementById("repair-form").addEventListener("submit", function(e) {
       btn.textContent = "Починить"; btn.disabled = false;
     })
     .catch(function(){ status.style.color="#c00"; status.textContent="❌ Ошибка сети"; status.style.display="block"; btn.textContent="Починить"; btn.disabled=false; });
+});
+document.getElementById("reset-btn").addEventListener("click", function() {
+  var slug = document.getElementById("repair-slug").value.trim();
+  if (!slug) { alert("Введи slug"); return; }
+  if (!confirm("Сбросить все голоса для \"" + slug + "\"?")) return;
+  var status = document.getElementById("repair-status");
+  fetch("/reset-votes", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({slug: slug})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      status.style.color = d.ok ? "#0a0" : "#c00";
+      status.textContent = d.ok ? "✅ Голоса сброшены" : "❌ " + (d.error || JSON.stringify(d));
+      status.style.display = "block";
+    });
 });
 </script>
 </body></html>"""
@@ -630,6 +644,32 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"ok": True, "slug": slug,
                 "message": "публикация запущена, пост появится через несколько секунд"}).encode())
+            return
+
+        # ── Reset votes for a slug ───────────────────────────────────────────
+        if self.path == "/reset-votes":
+            try:
+                d = json.loads(body)
+            except Exception:
+                d = dict(urllib.parse.parse_qsl(body.decode()))
+            slug = d.get("slug", "").strip()
+            entry = SLUG_MAP.get(slug) if isinstance(SLUG_MAP.get(slug), dict) else None
+            if not entry:
+                self.send_response(404)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": f"slug '{slug}' not found"}).encode())
+                return
+            entry["votes"] = {}
+            entry["comment_ids"] = {}
+            entry["scores_by_user"] = {}
+            save_slug_map(SLUG_MAP)
+            update_average(slug)
+            print(f"✅ Reset votes for slug={slug}")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True}).encode())
             return
 
         # ── Repair button message for a slug ─────────────────────────────────

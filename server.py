@@ -694,7 +694,8 @@ class Handler(BaseHTTPRequestHandler):
                     "parse_mode":   "HTML",
                     "reply_markup": markup,
                 })
-                edited = bool(res_edit and res_edit.get("ok"))
+                err = (res_edit or {}).get("description", "")
+                edited = bool(res_edit and (res_edit.get("ok") or "not modified" in err))
                 print(f"[repair] editMessageText slug={slug} msg={button_msg_id} ok={edited} resp={res_edit}")
             if edited:
                 self.send_response(200)

@@ -255,7 +255,7 @@ def update_average(slug):
     else:
         text = "·"
 
-    tg("editMessageText", {
+    res = tg("editMessageText", {
         "chat_id":      CHANNEL_ID,
         "message_id":   button_msg_id,
         "text":         text,
@@ -264,6 +264,8 @@ def update_average(slug):
             "inline_keyboard": [[{"text": button_text, "url": button_url}]]
         }
     })
+    if not res or not res.get("ok"):
+        print(f"[WARN] editMessageText failed for slug={slug} button_msg_id={button_msg_id}: {res}")
 
 # ── ID helpers ────────────────────────────────────────────────────────────────
 
@@ -419,6 +421,39 @@ document.querySelector("form").addEventListener("submit", function(e) {
     .then(function(r){ return r.json(); })
     .then(function(){ status.style.display="block"; btn.textContent="Опубликовать"; btn.disabled=false; })
     .catch(function(){ btn.textContent="Ошибка, попробуй ещё раз"; btn.disabled=false; });
+});
+</script>
+<hr style="margin-top:48px">
+<h2>Починить кнопку поста</h2>
+<p style="color:#666;font-size:13px">Если кнопка с оценкой была удалена или не обновляется — создаст новую и обновит ID в базе.</p>
+<form id="repair-form">
+  <label>Slug поста</label>
+  <input id="repair-slug" required placeholder="sber">
+  <button type="submit" id="repair-btn">Починить</button>
+  <p id="repair-status" style="font-weight:600;display:none"></p>
+</form>
+<script>
+document.getElementById("repair-form").addEventListener("submit", function(e) {
+  e.preventDefault();
+  var slug = document.getElementById("repair-slug").value.trim();
+  var btn = document.getElementById("repair-btn");
+  var status = document.getElementById("repair-status");
+  btn.disabled = true; btn.textContent = "Отправляю...";
+  status.style.display = "none";
+  fetch("/repair", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({slug: slug})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.ok) {
+        status.style.color = "#0a0";
+        status.textContent = "✅ Починено! Новый button_msg_id: " + d.new_button_msg_id;
+      } else {
+        status.style.color = "#c00";
+        status.textContent = "❌ " + (d.error || JSON.stringify(d));
+      }
+      status.style.display = "block";
+      btn.textContent = "Починить"; btn.disabled = false;
+    })
+    .catch(function(){ status.style.color="#c00"; status.textContent="❌ Ошибка сети"; status.style.display="block"; btn.textContent="Починить"; btn.disabled=false; });
 });
 </script>
 </body></html>"""
@@ -586,6 +621,64 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"ok": True, "slug": slug,
                 "message": "публикация запущена, пост появится через несколько секунд"}).encode())
+            return
+
+        # ── Repair button message for a slug ─────────────────────────────────
+        if self.path == "/repair":
+            try:
+                d = json.loads(body)
+            except Exception:
+                d = dict(urllib.parse.parse_qsl(body.decode()))
+            slug = d.get("slug", "").strip()
+            entry = SLUG_MAP.get(slug) if isinstance(SLUG_MAP.get(slug), dict) else None
+            if not entry:
+                self.send_response(404)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": f"slug '{slug}' not found"}).encode())
+                return
+            button_text = entry.get("button_text", "Оценить дизайн ✦")
+            button_url  = f"{MINI_APP_URL}?startapp={slug}"
+            votes = entry.get("votes", {})
+            if votes:
+                avg   = sum(votes.values()) / len(votes)
+                count = len(votes)
+                scores_by_user = entry.get("scores_by_user", {})
+                crit_line = ""
+                if scores_by_user:
+                    keys = [("content", "Смысл"), ("usability", "Удобство"), ("visual", "Визуал"), ("idea", "Идея")]
+                    parts = []
+                    for key, label in keys:
+                        vals = [s[key] for s in scores_by_user.values() if key in s]
+                        if vals:
+                            parts.append(f"{label} {round(sum(vals)/len(vals))}")
+                    if parts:
+                        crit_line = " | " + " · ".join(parts)
+                text = f"⭐ <b>{round(avg)}/17</b>{crit_line}\n{count} {_vote_word(count)}"
+            else:
+                text = "·"
+            res = tg("sendMessage", {
+                "chat_id":    CHANNEL_ID,
+                "text":       text,
+                "parse_mode": "HTML",
+                "reply_markup": {
+                    "inline_keyboard": [[{"text": button_text, "url": button_url}]]
+                }
+            })
+            if res and res.get("ok"):
+                new_id = res["result"]["message_id"]
+                entry["button_msg_id"] = new_id
+                save_slug_map(SLUG_MAP)
+                print(f"✅ Repaired button for slug={slug} new button_msg_id={new_id}")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "new_button_msg_id": new_id}).encode())
+            else:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "tg_error": res}).encode())
             return
 
         # ── Rating from mini-app ──────────────────────────────────────────────

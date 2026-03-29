@@ -418,7 +418,7 @@ ADMIN_FORM = """<!DOCTYPE html>
   .drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
   .drop-zone .dz-hint{color:#999;font-size:13px;font-weight:400;pointer-events:none}
   .drop-zone .dz-preview{display:none;margin-top:8px;pointer-events:none}
-  .drop-zone .dz-preview img{max-height:120px;border-radius:6px;max-width:100%}
+  .drop-zone .dz-preview img{width:100%;height:160px;border-radius:6px;object-fit:cover;display:block}
   .drop-zone .dz-name{font-size:12px;color:#555;margin-top:4px}
   .dz-clear{display:none;margin-top:6px;font-size:12px;color:#c00;background:none;border:none;cursor:pointer;padding:0;pointer-events:all}
   .avatar-picker-toggle{font-size:13px;color:#7b2ff7;background:none;border:none;cursor:pointer;padding:0;margin-top:4px;display:block}

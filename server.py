@@ -330,7 +330,7 @@ def handle_telegram_update(update):
 # ── post publisher ────────────────────────────────────────────────────────────
 
 def publish_post(photo, caption, slug, button_text="Оценить дизайн ✦",
-                 parse_mode="Markdown", name="", subtitle="", photo_bytes=None, thumb_bytes=None):
+                 parse_mode="Markdown", name="", subtitle="", photo_bytes=None, thumb_bytes=None, avatar_file=""):
     """
     1. Publish photo (no button) — comment section stays visible.
     2. Send rating button as a separate channel message.
@@ -386,6 +386,7 @@ def publish_post(photo, caption, slug, button_text="Оценить дизайн 
         "name":           name,
         "subtitle":       subtitle,
         "photo_file_id":  photo_file_id,   # auto-captured Telegram file_id
+        "avatar_file":    avatar_file,
         "votes":          {},
         "comment_ids":    {},  # {username: comment_msg_id}
     }
@@ -459,6 +460,7 @@ ADMIN_FORM = """<!DOCTYPE html>
     <div class="dz-preview"><img id="dz-mini-img" src=""><div class="dz-name" id="dz-mini-name"></div></div>
   </div>
   <button type="button" class="dz-clear" id="dz-mini-clear">✕ Удалить файл</button>
+  <input type="hidden" name="avatar_file" id="avatar_file_input">
   <div class="avatar-grid open" id="avatar-grid"></div>
   <button type="submit" id="btn">Опубликовать</button>
   <p id="status" style="color:#0a0;font-weight:600;display:none">✅ Публикация запущена — пост появится в канале через несколько секунд</p>
@@ -665,6 +667,7 @@ function loadAvatarPicker() {
           if (zMini) applyFile(zMini, file);
           var nameInput = document.querySelector('[name="name"]');
           if (nameInput && !nameInput.value) nameInput.value = av.name;
+          document.getElementById('avatar_file_input').value = av.file;
         });
       });
       grid.appendChild(item);
@@ -780,19 +783,19 @@ class Handler(BaseHTTPRequestHandler):
         # ── GET /stats — aggregated per-person stats ──────────────────────────────
         if self.path == "/stats":
             avatars = load_avatars()
-            avatar_names = {a["name"]: a["file"] for a in avatars}
+            avatar_names = {a["file"]: a["name"] for a in avatars}
             stats = {}
             for slug, entry in SLUG_MAP.items():
                 if not isinstance(entry, dict):
                     continue
-                person = entry.get("name", "").strip()
-                if not person or person not in avatar_names:
+                av_file = entry.get("avatar_file", "").strip()
+                if not av_file or av_file not in avatar_names:
                     continue
                 scores_by_user = entry.get("scores_by_user", {})
                 if not scores_by_user:
                     continue
-                if person not in stats:
-                    stats[person] = {"person": person, "works": [], "votes_total": 0}
+                if av_file not in stats:
+                    stats[av_file] = {"av_file": av_file, "works": [], "votes_total": 0}
                 # collect per-work avg
                 work_scores = list(scores_by_user.values())
                 work_votes = entry.get("votes", {})
@@ -804,18 +807,18 @@ class Handler(BaseHTTPRequestHandler):
                 # final scores from votes dict
                 vote_vals = [v for v in work_votes.values() if v]
                 work_avg_total = round(sum(vote_vals) / len(vote_vals), 1) if vote_vals else 0
-                stats[person]["works"].append({
+                stats[av_file]["works"].append({
                     "slug": slug,
                     "subtitle": entry.get("subtitle", ""),
                     "avg_total": work_avg_total,
                     "avg_by_crit": work_avg_by_crit,
                     "votes_count": len(vote_vals),
                 })
-                stats[person]["votes_total"] += len(vote_vals)
+                stats[av_file]["votes_total"] += len(vote_vals)
             # compute overall averages per person
             result = []
             criteria = ["content", "usability", "visual", "idea"]
-            for person, data in stats.items():
+            for av_file, data in stats.items():
                 works = data["works"]
                 if not works:
                     continue
@@ -825,8 +828,8 @@ class Handler(BaseHTTPRequestHandler):
                     vals = [w["avg_by_crit"][c] for w in works if w["avg_by_crit"].get(c)]
                     overall_by_crit[c] = round(sum(vals) / len(vals), 1) if vals else 0
                 result.append({
-                    "person": person,
-                    "avatar_file": avatar_names.get(person, ""),
+                    "person": avatar_names[av_file],
+                    "avatar_file": av_file,
                     "avg_total": overall_total,
                     "avg_by_crit": overall_by_crit,
                     "works_count": len(works),
@@ -913,6 +916,7 @@ class Handler(BaseHTTPRequestHandler):
             ct = self.headers.get("Content-Type", "")
             photo_file_data = None
             post_photo_data = None
+            avatar_file     = ""
             if "multipart/form-data" in ct:
                 fields, files = parse_multipart(body, ct)
                 def fval(k): return fields.get(k, "").strip()
@@ -921,6 +925,7 @@ class Handler(BaseHTTPRequestHandler):
                 button_text = fval("button_text") or "Оценить дизайн ✦"
                 name        = fval("name")
                 subtitle    = fval("subtitle")
+                avatar_file = fval("avatar_file")
                 if "photo_file" in files:
                     photo_file_data = files["photo_file"]
                 if "post_photo" in files:
@@ -932,6 +937,7 @@ class Handler(BaseHTTPRequestHandler):
                 button_text = d.get("button_text", "Оценить дизайн ✦").strip() or "Оценить дизайн ✦"
                 name        = d.get("name",        "").strip()
                 subtitle    = d.get("subtitle",    "").strip()
+                avatar_file = d.get("avatar_file", "").strip()
             else:
                 d = dict(urllib.parse.parse_qsl(body.decode()))
                 caption     = d.get("caption",     "").strip()
@@ -939,6 +945,7 @@ class Handler(BaseHTTPRequestHandler):
                 button_text = d.get("button_text", "Оценить дизайн ✦").strip() or "Оценить дизайн ✦"
                 name        = d.get("name",        "").strip()
                 subtitle    = d.get("subtitle",    "").strip()
+                avatar_file = d.get("avatar_file", "").strip()
             if not caption or not slug:
                 self.send_response(400)
                 self.send_header("Content-Type", "application/json")
@@ -955,7 +962,8 @@ class Handler(BaseHTTPRequestHandler):
             # Publish in background so the form doesn't hang on large files
             def do_publish():
                 publish_post(None, caption, slug, button_text,
-                             name=name, subtitle=subtitle, photo_bytes=post_photo_data)
+                             name=name, subtitle=subtitle, photo_bytes=post_photo_data,
+                             avatar_file=avatar_file)
             threading.Thread(target=do_publish, daemon=True).start()
 
             self.send_response(200)

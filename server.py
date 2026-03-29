@@ -420,6 +420,37 @@ ADMIN_FORM = """<!DOCTYPE html>
   <p id="status" style="color:#0a0;font-weight:600;display:none">✅ Публикация запущена — пост появится в канале через несколько секунд</p>
 </form>
 <script>
+// Paste image from clipboard into file inputs
+(function() {
+  var lastFileInput = document.querySelector('[name="post_photo"]');
+  document.querySelectorAll('input[type="file"]').forEach(function(inp) {
+    inp.addEventListener('focus', function() { lastFileInput = inp; });
+    inp.addEventListener('click', function() { lastFileInput = inp; });
+  });
+  document.addEventListener('paste', function(e) {
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') === -1) continue;
+      var file = items[i].getAsFile();
+      if (!file) continue;
+      var dt = new DataTransfer();
+      dt.items.add(file);
+      lastFileInput.files = dt.files;
+      var label = lastFileInput.nextSibling;
+      var span = lastFileInput.parentNode.querySelector('.paste-name');
+      if (!span) {
+        span = document.createElement('span');
+        span.className = 'paste-name';
+        span.style.cssText = 'margin-left:8px;font-size:13px;color:#0a0';
+        lastFileInput.parentNode.insertBefore(span, lastFileInput.nextSibling);
+      }
+      span.textContent = '✓ ' + file.name;
+      e.preventDefault();
+      break;
+    }
+  });
+})();
 document.querySelector("form").addEventListener("submit", function(e) {
   e.preventDefault();
   var btn = document.getElementById("btn");

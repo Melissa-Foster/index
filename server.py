@@ -397,12 +397,23 @@ ADMIN_FORM = """<!DOCTYPE html>
   #modal-box .btns{display:flex;gap:12px;justify-content:center}
   #modal-box .btns button{margin-top:0}
   h3{margin-top:32px}
+  .drop-zone{border:2px dashed #ccc;border-radius:8px;padding:16px;margin:4px 0;cursor:pointer;text-align:center;background:#fafafa;transition:border-color .2s,background .2s;position:relative}
+  .drop-zone:hover,.drop-zone.active{border-color:#7b2ff7;background:#f3eeff}
+  .drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .drop-zone .dz-hint{color:#999;font-size:13px;font-weight:400;pointer-events:none}
+  .drop-zone .dz-preview{display:none;margin-top:8px;pointer-events:none}
+  .drop-zone .dz-preview img{max-height:120px;border-radius:6px;max-width:100%}
+  .drop-zone .dz-name{font-size:12px;color:#555;margin-top:4px}
 </style></head><body>
 <h2>Опубликовать пост в канале</h2>
 <form method="POST" action="/publish" enctype="multipart/form-data">
   <h3 style="margin-top:16px">Пост в канале</h3>
   <label>Фото или видео поста (jpg/png/mp4/mov) — необязательно</label>
-  <input name="post_photo" type="file" accept="image/*,video/*">
+  <div class="drop-zone" id="dz-post">
+    <input name="post_photo" type="file" accept="image/*,video/*">
+    <div class="dz-hint">Нажми, перетащи файл или вставь из буфера <b>⌘V</b></div>
+    <div class="dz-preview"><img id="dz-post-img" src=""><div class="dz-name" id="dz-post-name"></div></div>
+  </div>
   <label>Подпись (Markdown: *жирный*, _курсив_, [текст](https://url))</label>
   <textarea name="caption" rows="6" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание...\n\n[Открыть сайт](https://sber.ru)"></textarea>
   <label>Текст кнопки оценки</label>
@@ -415,37 +426,65 @@ ADMIN_FORM = """<!DOCTYPE html>
   <label>Подзаголовок (тип + год, напр: Сайт, релиз 2026)</label>
   <input name="subtitle" required placeholder="Сайт, релиз 2026">
   <label>Фото для мини-апп (загрузить файл — jpg/png)</label>
-  <input name="photo_file" type="file" accept="image/*">
+  <div class="drop-zone" id="dz-mini">
+    <input name="photo_file" type="file" accept="image/*">
+    <div class="dz-hint">Нажми, перетащи файл или вставь из буфера <b>⌘V</b></div>
+    <div class="dz-preview"><img id="dz-mini-img" src=""><div class="dz-name" id="dz-mini-name"></div></div>
+  </div>
   <button type="submit" id="btn">Опубликовать</button>
   <p id="status" style="color:#0a0;font-weight:600;display:none">✅ Публикация запущена — пост появится в канале через несколько секунд</p>
 </form>
 <script>
-// Paste image from clipboard into file inputs
+// Drop-zone: preview + paste + drag
 (function() {
-  var lastFileInput = document.querySelector('[name="post_photo"]');
-  document.querySelectorAll('input[type="file"]').forEach(function(inp) {
-    inp.addEventListener('focus', function() { lastFileInput = inp; });
-    inp.addEventListener('click', function() { lastFileInput = inp; });
+  var zones = [
+    {zone: document.getElementById('dz-post'), inp: document.querySelector('[name="post_photo"]'), img: document.getElementById('dz-post-img'), name: document.getElementById('dz-post-name')},
+    {zone: document.getElementById('dz-mini'), inp: document.querySelector('[name="photo_file"]'),  img: document.getElementById('dz-mini-img'), name: document.getElementById('dz-mini-name')}
+  ];
+  var lastZone = zones[0];
+
+  function showPreview(z, file) {
+    z.name.textContent = file.name;
+    if (file.type.indexOf('image') === 0) {
+      var url = URL.createObjectURL(file);
+      z.img.src = url;
+      z.img.style.display = 'block';
+    } else {
+      z.img.style.display = 'none';
+    }
+    z.zone.querySelector('.dz-preview').style.display = 'block';
+    z.zone.querySelector('.dz-hint').style.display = 'none';
+  }
+
+  function applyFile(z, file) {
+    var dt = new DataTransfer();
+    dt.items.add(file);
+    z.inp.files = dt.files;
+    showPreview(z, file);
+  }
+
+  zones.forEach(function(z) {
+    z.zone.addEventListener('click', function() { lastZone = z; });
+    z.inp.addEventListener('change', function() {
+      if (z.inp.files[0]) showPreview(z, z.inp.files[0]);
+    });
+    z.zone.addEventListener('dragover', function(e) { e.preventDefault(); z.zone.classList.add('active'); });
+    z.zone.addEventListener('dragleave', function() { z.zone.classList.remove('active'); });
+    z.zone.addEventListener('drop', function(e) {
+      e.preventDefault(); z.zone.classList.remove('active');
+      var file = e.dataTransfer.files[0];
+      if (file) applyFile(z, file);
+    });
   });
+
   document.addEventListener('paste', function(e) {
     var items = e.clipboardData && e.clipboardData.items;
     if (!items) return;
     for (var i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') === -1) continue;
       var file = items[i].getAsFile();
-      if (!file) continue;
-      var dt = new DataTransfer();
-      dt.items.add(file);
-      lastFileInput.files = dt.files;
-      var label = lastFileInput.nextSibling;
-      var span = lastFileInput.parentNode.querySelector('.paste-name');
-      if (!span) {
-        span = document.createElement('span');
-        span.className = 'paste-name';
-        span.style.cssText = 'margin-left:8px;font-size:13px;color:#0a0';
-        lastFileInput.parentNode.insertBefore(span, lastFileInput.nextSibling);
-      }
-      span.textContent = '✓ ' + file.name;
+      if (!file) { continue; }
+      applyFile(lastZone, file);
       e.preventDefault();
       break;
     }

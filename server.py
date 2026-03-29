@@ -560,6 +560,7 @@ document.querySelector("form").addEventListener("submit", function(e) {
   <input id="repair-bmid" placeholder="101" type="number">
   <button type="submit" id="repair-btn">Починить</button>
   <button type="button" id="reset-btn" style="background:#c00;margin-left:8px">Сбросить голоса</button>
+  <button type="button" id="delete-post-btn" style="background:#888;margin-left:8px">Удалить пост из базы</button>
   <p id="repair-status" style="font-weight:600;display:none"></p>
 </form>
 <script>
@@ -603,6 +604,27 @@ document.getElementById("reset-btn").addEventListener("click", function() {
       .then(function(d){
         status.style.color = d.ok ? "#0a0" : "#c00";
         status.textContent = d.ok ? "✅ Голоса сброшены" : "❌ " + (d.error || JSON.stringify(d));
+        status.style.display = "block";
+      })
+      .catch(function(){ status.style.color="#c00"; status.textContent="❌ Ошибка сети"; status.style.display="block"; });
+  };
+  document.getElementById("modal-cancel").onclick = function() {
+    document.getElementById("modal-overlay").classList.remove("open");
+  };
+});
+document.getElementById("delete-post-btn").addEventListener("click", function() {
+  var slug = document.getElementById("repair-slug").value.trim();
+  var status = document.getElementById("repair-status");
+  if (!slug) { status.style.color="#c00"; status.textContent="❌ Введи slug"; status.style.display="block"; return; }
+  document.getElementById("modal-msg").textContent = "Удалить пост «" + slug + "» из базы? Голоса и статистика пропадут.";
+  document.getElementById("modal-overlay").classList.add("open");
+  document.getElementById("modal-confirm").onclick = function() {
+    document.getElementById("modal-overlay").classList.remove("open");
+    fetch("/delete-post", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({slug: slug})})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        status.style.color = d.ok ? "#0a0" : "#c00";
+        status.textContent = d.ok ? "✅ Пост удалён из базы" : "❌ " + (d.error || JSON.stringify(d));
         status.style.display = "block";
       })
       .catch(function(){ status.style.color="#c00"; status.textContent="❌ Ошибка сети"; status.style.display="block"; });
@@ -993,6 +1015,28 @@ class Handler(BaseHTTPRequestHandler):
             save_slug_map(SLUG_MAP)
             update_average(slug)
             print(f"✅ Reset votes for slug={slug}")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True}).encode())
+            return
+
+        # ── Delete post from SLUG_MAP ────────────────────────────────────────
+        if self.path == "/delete-post":
+            try:
+                d = json.loads(body)
+            except Exception:
+                d = dict(urllib.parse.parse_qsl(body.decode()))
+            slug = d.get("slug", "").strip()
+            if slug not in SLUG_MAP:
+                self.send_response(404)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": f"slug '{slug}' not found"}).encode())
+                return
+            del SLUG_MAP[slug]
+            save_slug_map(SLUG_MAP)
+            print(f"✅ Deleted post slug={slug} from SLUG_MAP")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

@@ -549,23 +549,6 @@ document.querySelector("form").addEventListener("submit", function(e) {
 });
 </script>
 <hr style="margin-top:48px">
-<h2>Статистика</h2>
-<button type="button" id="clear-stats-btn" style="background:#c00;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:15px">Очистить всю статистику</button>
-<p id="clear-stats-status" style="font-weight:600;display:none"></p>
-<script>
-document.getElementById("clear-stats-btn").addEventListener("click", function() {
-  if (!confirm("Удалить все голоса и оценки по всем постам? Отменить нельзя.")) return;
-  fetch("/clear-all-stats", {method:"POST"})
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      var s = document.getElementById("clear-stats-status");
-      s.style.color = d.ok ? "#0a0" : "#c00";
-      s.textContent = d.ok ? "✅ Статистика очищена" : "❌ " + (d.error || JSON.stringify(d));
-      s.style.display = "block";
-    });
-});
-</script>
-<hr style="margin-top:48px">
 <h2>Починить кнопку поста</h2>
 <p style="color:#666;font-size:13px">Если кнопка с оценкой была удалена или не обновляется — создаст новую и обновит ID в базе.</p>
 <label style="margin-bottom:4px">Выбрать пост из базы</label>
@@ -1036,23 +1019,6 @@ class Handler(BaseHTTPRequestHandler):
             save_slug_map(SLUG_MAP)
             update_average(slug)
             print(f"✅ Reset votes for slug={slug}")
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps({"ok": True}).encode())
-            return
-
-        # ── Clear all stats (votes + scores) across all posts ───────────────
-        if self.path == "/clear-all-stats":
-            for slug, entry in SLUG_MAP.items():
-                if not isinstance(entry, dict):
-                    continue
-                entry["votes"] = {}
-                entry["comment_ids"] = {}
-                entry["scores_by_user"] = {}
-                update_average(slug)
-            save_slug_map(SLUG_MAP)
-            print("✅ Cleared all stats")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

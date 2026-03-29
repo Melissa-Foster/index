@@ -478,9 +478,9 @@ document.addEventListener("DOMContentLoaded", function() {
   function showPreview(z, file) {
     z.name.textContent = file.name;
     if (file.type.indexOf('image') === 0) {
-      var url = URL.createObjectURL(file);
-      z.img.src = url;
-      z.img.style.display = 'block';
+      var reader = new FileReader();
+      reader.onload = function(e) { z.img.src = e.target.result; z.img.style.display = 'block'; };
+      reader.readAsDataURL(file);
     } else {
       z.img.style.display = 'none';
     }
@@ -761,7 +761,7 @@ class Handler(BaseHTTPRequestHandler):
 
         # ── GET /avatar/<file> — serve avatar image ───────────────────────────
         if self.path.startswith("/avatar/"):
-            fname = os.path.basename(self.path[8:].split("?")[0])
+            fname = os.path.basename(urllib.parse.unquote(self.path[8:].split("?")[0]))
             fpath = os.path.join(AVATARS_DIR, fname)
             if os.path.exists(fpath):
                 with open(fpath, "rb") as af:

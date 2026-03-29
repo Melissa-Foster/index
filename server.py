@@ -414,8 +414,8 @@ ADMIN_FORM = """<!DOCTYPE html>
     <input name="post_photo" type="file" accept="image/*,video/*">
     <div class="dz-hint">Нажми, перетащи файл или вставь из буфера <b>⌘V</b></div>
     <div class="dz-preview"><img id="dz-post-img" src=""><div class="dz-name" id="dz-post-name"></div></div>
-    <button type="button" class="dz-clear" id="dz-post-clear">✕ Удалить файл</button>
   </div>
+  <button type="button" class="dz-clear" id="dz-post-clear">✕ Удалить файл</button>
   <label>Подпись (Markdown: *жирный*, _курсив_, [текст](https://url))</label>
   <textarea name="caption" rows="6" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание...\n\n[Открыть сайт](https://sber.ru)"></textarea>
   <label>Текст кнопки оценки</label>
@@ -432,8 +432,8 @@ ADMIN_FORM = """<!DOCTYPE html>
     <input name="photo_file" type="file" accept="image/*">
     <div class="dz-hint">Нажми, перетащи файл или вставь из буфера <b>⌘V</b></div>
     <div class="dz-preview"><img id="dz-mini-img" src=""><div class="dz-name" id="dz-mini-name"></div></div>
-    <button type="button" class="dz-clear" id="dz-mini-clear">✕ Удалить файл</button>
   </div>
+  <button type="button" class="dz-clear" id="dz-mini-clear">✕ Удалить файл</button>
   <button type="submit" id="btn">Опубликовать</button>
   <p id="status" style="color:#0a0;font-weight:600;display:none">✅ Публикация запущена — пост появится в канале через несколько секунд</p>
 </form>
@@ -478,7 +478,7 @@ ADMIN_FORM = """<!DOCTYPE html>
 
   zones.forEach(function(z) {
     z.zone.addEventListener('click', function() { lastZone = z; });
-    z.clear.addEventListener('click', function(e) { e.stopPropagation(); clearZone(z); });
+    z.clear.addEventListener('click', function() { clearZone(z); });
     z.inp.addEventListener('change', function() {
       if (z.inp.files[0]) showPreview(z, z.inp.files[0]);
     });

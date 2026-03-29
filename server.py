@@ -404,6 +404,7 @@ ADMIN_FORM = """<!DOCTYPE html>
   .drop-zone .dz-preview{display:none;margin-top:8px;pointer-events:none}
   .drop-zone .dz-preview img{max-height:120px;border-radius:6px;max-width:100%}
   .drop-zone .dz-name{font-size:12px;color:#555;margin-top:4px}
+  .dz-clear{display:none;margin-top:6px;font-size:12px;color:#c00;background:none;border:none;cursor:pointer;padding:0;pointer-events:all}
 </style></head><body>
 <h2>Опубликовать пост в канале</h2>
 <form method="POST" action="/publish" enctype="multipart/form-data">
@@ -413,6 +414,7 @@ ADMIN_FORM = """<!DOCTYPE html>
     <input name="post_photo" type="file" accept="image/*,video/*">
     <div class="dz-hint">Нажми, перетащи файл или вставь из буфера <b>⌘V</b></div>
     <div class="dz-preview"><img id="dz-post-img" src=""><div class="dz-name" id="dz-post-name"></div></div>
+    <button type="button" class="dz-clear" id="dz-post-clear">✕ Удалить файл</button>
   </div>
   <label>Подпись (Markdown: *жирный*, _курсив_, [текст](https://url))</label>
   <textarea name="caption" rows="6" required placeholder="*Сбербанк*\nСайт · Релиз 2025\n\nОписание...\n\n[Открыть сайт](https://sber.ru)"></textarea>
@@ -430,6 +432,7 @@ ADMIN_FORM = """<!DOCTYPE html>
     <input name="photo_file" type="file" accept="image/*">
     <div class="dz-hint">Нажми, перетащи файл или вставь из буфера <b>⌘V</b></div>
     <div class="dz-preview"><img id="dz-mini-img" src=""><div class="dz-name" id="dz-mini-name"></div></div>
+    <button type="button" class="dz-clear" id="dz-mini-clear">✕ Удалить файл</button>
   </div>
   <button type="submit" id="btn">Опубликовать</button>
   <p id="status" style="color:#0a0;font-weight:600;display:none">✅ Публикация запущена — пост появится в канале через несколько секунд</p>
@@ -438,8 +441,8 @@ ADMIN_FORM = """<!DOCTYPE html>
 // Drop-zone: preview + paste + drag
 (function() {
   var zones = [
-    {zone: document.getElementById('dz-post'), inp: document.querySelector('[name="post_photo"]'), img: document.getElementById('dz-post-img'), name: document.getElementById('dz-post-name')},
-    {zone: document.getElementById('dz-mini'), inp: document.querySelector('[name="photo_file"]'),  img: document.getElementById('dz-mini-img'), name: document.getElementById('dz-mini-name')}
+    {zone: document.getElementById('dz-post'), inp: document.querySelector('[name="post_photo"]'), img: document.getElementById('dz-post-img'), name: document.getElementById('dz-post-name'), clear: document.getElementById('dz-post-clear')},
+    {zone: document.getElementById('dz-mini'), inp: document.querySelector('[name="photo_file"]'),  img: document.getElementById('dz-mini-img'), name: document.getElementById('dz-mini-name'), clear: document.getElementById('dz-mini-clear')}
   ];
   var lastZone = zones[0];
 
@@ -454,6 +457,16 @@ ADMIN_FORM = """<!DOCTYPE html>
     }
     z.zone.querySelector('.dz-preview').style.display = 'block';
     z.zone.querySelector('.dz-hint').style.display = 'none';
+    z.clear.style.display = 'block';
+  }
+
+  function clearZone(z) {
+    z.inp.value = '';
+    z.img.src = ''; z.img.style.display = 'none';
+    z.name.textContent = '';
+    z.zone.querySelector('.dz-preview').style.display = 'none';
+    z.zone.querySelector('.dz-hint').style.display = '';
+    z.clear.style.display = 'none';
   }
 
   function applyFile(z, file) {
@@ -465,6 +478,7 @@ ADMIN_FORM = """<!DOCTYPE html>
 
   zones.forEach(function(z) {
     z.zone.addEventListener('click', function() { lastZone = z; });
+    z.clear.addEventListener('click', function(e) { e.stopPropagation(); clearZone(z); });
     z.inp.addEventListener('change', function() {
       if (z.inp.files[0]) showPreview(z, z.inp.files[0]);
     });

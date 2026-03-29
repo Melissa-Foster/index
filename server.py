@@ -465,9 +465,11 @@ ADMIN_FORM = """<!DOCTYPE html>
 </form>
 <script>
 // Drop-zone: preview + paste + drag
+var zones = [];
+var applyFile;
 document.addEventListener("DOMContentLoaded", function() {
 (function() {
-  var zones = [
+  zones = [
     {zone: document.getElementById('dz-post'), inp: document.querySelector('[name="post_photo"]'),   img: document.getElementById('dz-post-img'), name: document.getElementById('dz-post-name'), clear: document.getElementById('dz-post-clear')},
     {zone: document.getElementById('dz-mini'), inp: document.querySelector('[name="photo_file"]'),   img: document.getElementById('dz-mini-img'), name: document.getElementById('dz-mini-name'), clear: document.getElementById('dz-mini-clear')},
     {zone: document.getElementById('dz-av'),   inp: document.querySelector('[name="avatar_photo"]'), img: document.getElementById('dz-av-img'),   name: document.getElementById('dz-av-name'),   clear: document.getElementById('dz-av-clear')}
@@ -497,7 +499,7 @@ document.addEventListener("DOMContentLoaded", function() {
     z.clear.style.display = 'none';
   }
 
-  function applyFile(z, file) {
+  applyFile = function(z, file) {
     var dt = new DataTransfer();
     dt.items.add(file);
     z.inp.files = dt.files;

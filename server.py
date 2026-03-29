@@ -466,6 +466,7 @@ ADMIN_FORM = """<!DOCTYPE html>
 </form>
 <script>
 // Drop-zone: preview + paste + drag
+document.addEventListener("DOMContentLoaded", function() {
 (function() {
   var zones = [
     {zone: document.getElementById('dz-post'), inp: document.querySelector('[name="post_photo"]'),   img: document.getElementById('dz-post-img'), name: document.getElementById('dz-post-name'), clear: document.getElementById('dz-post-clear')},
@@ -532,6 +533,7 @@ ADMIN_FORM = """<!DOCTYPE html>
     }
   });
 })();
+}); // DOMContentLoaded
 document.querySelector("form").addEventListener("submit", function(e) {
   e.preventDefault();
   var btn = document.getElementById("btn");

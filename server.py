@@ -663,6 +663,8 @@ function loadAvatarPicker() {
           var file = new File([blob], av.file, {type: "image/jpeg"});
           var zMini = zones.find(function(z){ return z.inp.name === "photo_file"; });
           if (zMini) applyFile(zMini, file);
+          var nameInput = document.querySelector('[name="name"]');
+          if (nameInput && !nameInput.value) nameInput.value = av.name;
         });
       });
       grid.appendChild(item);
@@ -773,6 +775,67 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(data)
             else:
                 self.send_response(404); self.end_headers()
+            return
+
+        # ── GET /stats — aggregated per-person stats ──────────────────────────────
+        if self.path == "/stats":
+            stats = {}
+            for slug, entry in SLUG_MAP.items():
+                if not isinstance(entry, dict):
+                    continue
+                person = entry.get("name", "").strip()
+                if not person:
+                    continue
+                scores_by_user = entry.get("scores_by_user", {})
+                if not scores_by_user:
+                    continue
+                if person not in stats:
+                    stats[person] = {"person": person, "works": [], "votes_total": 0}
+                # collect per-work avg
+                work_scores = list(scores_by_user.values())
+                work_votes = entry.get("votes", {})
+                criteria = ["content", "usability", "visual", "idea"]
+                work_avg_by_crit = {}
+                for c in criteria:
+                    vals = [s.get(c, 0) for s in work_scores if s.get(c)]
+                    work_avg_by_crit[c] = round(sum(vals) / len(vals), 2) if vals else 0
+                # final scores from votes dict
+                vote_vals = [v for v in work_votes.values() if v]
+                work_avg_total = round(sum(vote_vals) / len(vote_vals), 1) if vote_vals else 0
+                stats[person]["works"].append({
+                    "slug": slug,
+                    "subtitle": entry.get("subtitle", ""),
+                    "avg_total": work_avg_total,
+                    "avg_by_crit": work_avg_by_crit,
+                    "votes_count": len(vote_vals),
+                })
+                stats[person]["votes_total"] += len(vote_vals)
+            # compute overall averages per person
+            result = []
+            criteria = ["content", "usability", "visual", "idea"]
+            for person, data in stats.items():
+                works = data["works"]
+                if not works:
+                    continue
+                overall_total = round(sum(w["avg_total"] for w in works) / len(works), 1)
+                overall_by_crit = {}
+                for c in criteria:
+                    vals = [w["avg_by_crit"][c] for w in works if w["avg_by_crit"].get(c)]
+                    overall_by_crit[c] = round(sum(vals) / len(vals), 1) if vals else 0
+                result.append({
+                    "person": person,
+                    "avg_total": overall_total,
+                    "avg_by_crit": overall_by_crit,
+                    "works_count": len(works),
+                    "votes_total": data["votes_total"],
+                    "works": works,
+                })
+            result.sort(key=lambda x: x["avg_total"], reverse=True)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(result, ensure_ascii=False).encode())
             return
 
         # ── GET /list-avatars — return avatar list JSON ────────────────────────

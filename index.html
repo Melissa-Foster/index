@@ -429,6 +429,60 @@ textarea::-webkit-scrollbar-thumb {
 }
 .delete-inline-btn:active { transform: scale(0.98); opacity: 0.65; }
 
+/* ── STATS PAGE ─────────────────────────────────── */
+#page-stats {
+  display: none;
+  min-height: 100vh;
+  flex-direction: column;
+  background: #fff;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 20px));
+}
+#page-stats.active { display: flex; flex-direction: column; }
+
+.stats-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 24px;
+}
+.stats-back {
+  background: none; border: none; cursor: pointer;
+  font-size: 16px; color: #7130ff; padding: 0; font-family: inherit;
+}
+.stats-title {
+  font-size: 22px; font-weight: 500; letter-spacing: -0.5px;
+}
+.stats-list { display: flex; flex-direction: column; gap: 16px; }
+.stats-card {
+  border: 1.5px solid #ebebeb; border-radius: 16px;
+  padding: 16px;
+}
+.stats-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.stats-person-name { font-size: 18px; font-weight: 500; }
+.stats-avg-score {
+  font-size: 22px; font-weight: 500; color: #7130ff; letter-spacing: -0.5px;
+}
+.stats-meta { font-size: 13px; color: #999; margin-bottom: 12px; }
+.stats-criteria { display: flex; flex-direction: column; gap: 6px; }
+.stats-crit-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.stats-crit-label { font-size: 13px; color: #717171; width: 90px; flex-shrink: 0; }
+.stats-crit-bar-wrap {
+  flex: 1; height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden;
+}
+.stats-crit-bar {
+  height: 100%; background: #7130ff; border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.32,0.72,0,1);
+}
+.stats-crit-val { font-size: 13px; font-weight: 500; color: #1C1C1E; width: 28px; text-align: right; }
+.btn-stats {
+  width: 100%; padding: 16px; border-radius: 14px; border: 1.5px solid #7130ff;
+  background: #fff; color: #7130ff; font-size: 17px; font-weight: 500;
+  cursor: pointer; font-family: inherit; letter-spacing: -0.3px;
+}
+
 /* ── SUCCESS PAGE ────────────────────────────────── */
 #page-success {
   display: none;
@@ -731,11 +785,25 @@ textarea::-webkit-scrollbar-thumb {
 
   <div class="success-actions">
     <button class="btn-to-channel" onclick="closeMiniApp()">Вернуться в канал</button>
+    <button class="btn-stats" onclick="openStats()">Смотреть статистику</button>
     <button class="btn-edit-rating" onclick="editRating()">Изменить оценку</button>
   </div>
 
 </div>
 
+
+<!-- ══════════════════════════════════════════════
+     PAGE: STATS
+══════════════════════════════════════════════ -->
+<div id="page-stats" class="page">
+  <div class="stats-header">
+    <button class="stats-back" onclick="closeStats()">← Назад</button>
+    <div class="stats-title">Статистика</div>
+  </div>
+  <div class="stats-list" id="stats-list">
+    <div style="color:#999;font-size:15px">Загрузка...</div>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════════════
      MODAL: SYSTEM INFO
@@ -1155,6 +1223,73 @@ async function handleSubmit() {
     submitting = false;
     if (btn) btn.disabled = false;
   }
+}
+
+// ── STATS ────────────────────────────────────────
+const CRIT_LABELS = {content: 'Содержание', usability: 'Удобство', visual: 'Визуал', idea: 'Идея'};
+
+function openStats() {
+  haptic('light');
+  document.getElementById('page-success').classList.remove('active');
+  document.getElementById('page-stats').classList.add('active');
+  loadStats();
+}
+
+function closeStats() {
+  haptic('light');
+  document.getElementById('page-stats').classList.remove('active');
+  document.getElementById('page-success').classList.add('active');
+}
+
+function loadStats() {
+  const list = document.getElementById('stats-list');
+  list.innerHTML = '<div style="color:#999;font-size:15px">Загрузка...</div>';
+  fetch(SERVER + '/stats')
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (!data.length) { list.innerHTML = '<div style="color:#999;font-size:15px">Нет данных</div>'; return; }
+      list.innerHTML = '';
+      data.forEach(function(p) {
+        var card = document.createElement('div');
+        card.className = 'stats-card';
+        var crits = ['content','usability','visual','idea'];
+        var barsHtml = crits.map(function(c) {
+          var val = p.avg_by_crit[c] || 0;
+          var pct = Math.round(val / 5 * 100);
+          return '<div class="stats-crit-row">' +
+            '<span class="stats-crit-label">' + CRIT_LABELS[c] + '</span>' +
+            '<div class="stats-crit-bar-wrap"><div class="stats-crit-bar" style="width:0%" data-pct="' + pct + '"></div></div>' +
+            '<span class="stats-crit-val">' + val.toFixed(1) + '</span>' +
+            '</div>';
+        }).join('');
+        card.innerHTML =
+          '<div class="stats-card-header">' +
+            '<span class="stats-person-name">' + p.person + '</span>' +
+            '<span class="stats-avg-score">' + p.avg_total.toFixed(1) + '</span>' +
+          '</div>' +
+          '<div class="stats-meta">' + p.works_count + ' ' + pluralWork(p.works_count) + ' · ' + p.votes_total + ' ' + pluralVote(p.votes_total) + '</div>' +
+          '<div class="stats-criteria">' + barsHtml + '</div>';
+        list.appendChild(card);
+      });
+      // animate bars
+      requestAnimationFrame(function() {
+        list.querySelectorAll('.stats-crit-bar').forEach(function(bar) {
+          bar.style.width = bar.dataset.pct + '%';
+        });
+      });
+    })
+    .catch(function() { list.innerHTML = '<div style="color:#c00;font-size:15px">Ошибка загрузки</div>'; });
+}
+
+function pluralWork(n) {
+  if (n % 10 === 1 && n % 100 !== 11) return 'работа';
+  if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'работы';
+  return 'работ';
+}
+function pluralVote(n) {
+  if (n % 10 === 1 && n % 100 !== 11) return 'голос';
+  if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'голоса';
+  return 'голосов';
 }
 
 // ── EDIT / DELETE ─────────────────────────────────

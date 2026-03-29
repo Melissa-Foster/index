@@ -779,12 +779,14 @@ class Handler(BaseHTTPRequestHandler):
 
         # ── GET /stats — aggregated per-person stats ──────────────────────────────
         if self.path == "/stats":
+            avatars = load_avatars()
+            avatar_names = {a["name"]: a["file"] for a in avatars}
             stats = {}
             for slug, entry in SLUG_MAP.items():
                 if not isinstance(entry, dict):
                     continue
                 person = entry.get("name", "").strip()
-                if not person:
+                if not person or person not in avatar_names:
                     continue
                 scores_by_user = entry.get("scores_by_user", {})
                 if not scores_by_user:
@@ -824,6 +826,7 @@ class Handler(BaseHTTPRequestHandler):
                     overall_by_crit[c] = round(sum(vals) / len(vals), 1) if vals else 0
                 result.append({
                     "person": person,
+                    "avatar_file": avatar_names.get(person, ""),
                     "avg_total": overall_total,
                     "avg_by_crit": overall_by_crit,
                     "works_count": len(works),

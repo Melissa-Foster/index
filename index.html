@@ -459,6 +459,8 @@ textarea::-webkit-scrollbar-thumb {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 12px;
 }
+.stats-person-info { display: flex; align-items: center; gap: 10px; }
+.stats-person-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #f0f0f0; }
 .stats-person-name { font-size: 18px; font-weight: 500; }
 .stats-avg-score {
   font-size: 22px; font-weight: 500; color: #7130ff; letter-spacing: -0.5px;
@@ -1262,9 +1264,10 @@ function loadStats() {
             '<span class="stats-crit-val">' + val.toFixed(1) + '</span>' +
             '</div>';
         }).join('');
+        var avatarHtml = p.avatar_file ? '<img class="stats-person-avatar" src="' + SERVER + '/avatar/' + encodeURIComponent(p.avatar_file) + '">' : '<div class="stats-person-avatar"></div>';
         card.innerHTML =
           '<div class="stats-card-header">' +
-            '<span class="stats-person-name">' + p.person + '</span>' +
+            '<div class="stats-person-info">' + avatarHtml + '<span class="stats-person-name">' + p.person + '</span></div>' +
             '<span class="stats-avg-score">' + p.avg_total.toFixed(1) + '</span>' +
           '</div>' +
           '<div class="stats-meta">' + p.works_count + ' ' + pluralWork(p.works_count) + ' · ' + p.votes_total + ' ' + pluralVote(p.votes_total) + '</div>' +

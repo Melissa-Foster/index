@@ -36,10 +36,26 @@ DISCUSSION_ID = os.environ.get("DISCUSSION_ID", "")
 MINI_APP_URL  = os.environ.get("MINI_APP_URL", "https://t.me/designindexxx_bot/rate")
 API           = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
-DATA_DIR  = "/data"
-MAP_FILE  = f"{DATA_DIR}/post_map.json"   # channel_post_id  → discussion_thread_id
-SLUG_FILE = f"{DATA_DIR}/slug_map.json"   # slug              → post entry dict
+DATA_DIR    = "/data"
+MAP_FILE    = f"{DATA_DIR}/post_map.json"
+SLUG_FILE   = f"{DATA_DIR}/slug_map.json"
+AVATARS_DIR = f"{DATA_DIR}/avatars"
+AVATARS_IDX = f"{AVATARS_DIR}/index.json"
 os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(AVATARS_DIR, exist_ok=True)
+
+def load_avatars():
+    if os.path.exists(AVATARS_IDX):
+        try:
+            with open(AVATARS_IDX) as f:
+                return json.load(f)
+        except:
+            pass
+    return []
+
+def save_avatars(lst):
+    with open(AVATARS_IDX, "w") as f:
+        json.dump(lst, f, ensure_ascii=False)
 
 # ── persistence ───────────────────────────────────────────────────────────────
 
@@ -405,6 +421,15 @@ ADMIN_FORM = """<!DOCTYPE html>
   .drop-zone .dz-preview img{max-height:120px;border-radius:6px;max-width:100%}
   .drop-zone .dz-name{font-size:12px;color:#555;margin-top:4px}
   .dz-clear{display:none;margin-top:6px;font-size:12px;color:#c00;background:none;border:none;cursor:pointer;padding:0;pointer-events:all}
+  .avatar-picker-toggle{font-size:13px;color:#7b2ff7;background:none;border:none;cursor:pointer;padding:0;margin-top:4px;display:block}
+  .avatar-grid{display:none;flex-wrap:wrap;gap:10px;margin-top:10px}
+  .avatar-grid.open{display:flex}
+  .avatar-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;width:72px}
+  .avatar-item img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid transparent;transition:border-color .15s}
+  .avatar-item:hover img,.avatar-item.selected img{border-color:#7b2ff7}
+  .avatar-item span{font-size:11px;text-align:center;color:#333;line-height:1.2}
+  .avatar-item .del-av{font-size:10px;color:#c00;background:none;border:none;cursor:pointer;padding:0;display:none}
+  .avatar-item:hover .del-av{display:block}
 </style></head><body>
 <h2>Опубликовать пост в канале</h2>
 <form method="POST" action="/publish" enctype="multipart/form-data">
@@ -434,6 +459,8 @@ ADMIN_FORM = """<!DOCTYPE html>
     <div class="dz-preview"><img id="dz-mini-img" src=""><div class="dz-name" id="dz-mini-name"></div></div>
   </div>
   <button type="button" class="dz-clear" id="dz-mini-clear">✕ Удалить файл</button>
+  <button type="button" class="avatar-picker-toggle" id="av-toggle">или выбрать из списка ↓</button>
+  <div class="avatar-grid" id="avatar-grid"></div>
   <button type="submit" id="btn">Опубликовать</button>
   <p id="status" style="color:#0a0;font-weight:600;display:none">✅ Публикация запущена — пост появится в канале через несколько секунд</p>
 </form>
@@ -441,8 +468,9 @@ ADMIN_FORM = """<!DOCTYPE html>
 // Drop-zone: preview + paste + drag
 (function() {
   var zones = [
-    {zone: document.getElementById('dz-post'), inp: document.querySelector('[name="post_photo"]'), img: document.getElementById('dz-post-img'), name: document.getElementById('dz-post-name'), clear: document.getElementById('dz-post-clear')},
-    {zone: document.getElementById('dz-mini'), inp: document.querySelector('[name="photo_file"]'),  img: document.getElementById('dz-mini-img'), name: document.getElementById('dz-mini-name'), clear: document.getElementById('dz-mini-clear')}
+    {zone: document.getElementById('dz-post'), inp: document.querySelector('[name="post_photo"]'),   img: document.getElementById('dz-post-img'), name: document.getElementById('dz-post-name'), clear: document.getElementById('dz-post-clear')},
+    {zone: document.getElementById('dz-mini'), inp: document.querySelector('[name="photo_file"]'),   img: document.getElementById('dz-mini-img'), name: document.getElementById('dz-mini-name'), clear: document.getElementById('dz-mini-clear')},
+    {zone: document.getElementById('dz-av'),   inp: document.querySelector('[name="avatar_photo"]'), img: document.getElementById('dz-av-img'),   name: document.getElementById('dz-av-name'),   clear: document.getElementById('dz-av-clear')}
   ];
   var lastZone = zones[0];
 
@@ -579,6 +607,91 @@ document.getElementById("reset-btn").addEventListener("click", function() {
   };
 });
 </script>
+<hr style="margin-top:48px">
+<h2>Аватары</h2>
+<p style="color:#666;font-size:13px">Фотографии участников для мини-апп. После загрузки появятся в пикере выше.</p>
+<form id="av-upload-form" enctype="multipart/form-data">
+  <label>Имя</label>
+  <input name="avatar_name" id="av-name" placeholder="Мелисса" required>
+  <label>Фото</label>
+  <div class="drop-zone" id="dz-av">
+    <input name="avatar_photo" type="file" accept="image/*">
+    <div class="dz-hint">Нажми, перетащи или вставь ⌘V</div>
+    <div class="dz-preview"><img id="dz-av-img" src=""><div class="dz-name" id="dz-av-name"></div></div>
+  </div>
+  <button type="button" class="dz-clear" id="dz-av-clear">✕ Удалить файл</button>
+  <button type="submit" id="av-btn" style="margin-top:12px">Добавить аватар</button>
+  <p id="av-status" style="font-size:13px;display:none"></p>
+</form>
+<div id="av-manage-grid" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px"></div>
+<script>
+// Avatar upload form
+document.getElementById("av-upload-form").addEventListener("submit", function(e) {
+  e.preventDefault();
+  var btn = document.getElementById("av-btn");
+  var status = document.getElementById("av-status");
+  btn.disabled = true; btn.textContent = "Загружается...";
+  fetch("/upload-avatar", {method:"POST", body: new FormData(this)})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      btn.disabled = false; btn.textContent = "Добавить аватар";
+      status.style.display = "block";
+      status.style.color = d.ok ? "#0a0" : "#c00";
+      status.textContent = d.ok ? "✅ Аватар добавлен" : "❌ " + (d.error || "ошибка");
+      if (d.ok) { loadAvatarGrid(); loadAvatarPicker(); }
+    })
+    .catch(function(){ btn.disabled=false; btn.textContent="Добавить аватар"; status.style.display="block"; status.style.color="#c00"; status.textContent="❌ Ошибка сети"; });
+});
+
+// Avatar picker (in publish form)
+document.getElementById("av-toggle").addEventListener("click", function() {
+  document.getElementById("avatar-grid").classList.toggle("open");
+});
+
+function loadAvatarPicker() {
+  fetch("/list-avatars").then(function(r){ return r.json(); }).then(function(list) {
+    var grid = document.getElementById("avatar-grid");
+    grid.innerHTML = "";
+    list.forEach(function(av) {
+      var item = document.createElement("div");
+      item.className = "avatar-item";
+      item.innerHTML = '<img src="/avatar/' + av.file + '"><span>' + av.name + '</span>';
+      item.addEventListener("click", function() {
+        grid.querySelectorAll(".avatar-item").forEach(function(i){ i.classList.remove("selected"); });
+        item.classList.add("selected");
+        fetch("/avatar/" + av.file).then(function(r){ return r.blob(); }).then(function(blob) {
+          var file = new File([blob], av.file, {type: "image/jpeg"});
+          var zMini = zones.find(function(z){ return z.inp.name === "photo_file"; });
+          if (zMini) applyFile(zMini, file);
+        });
+      });
+      grid.appendChild(item);
+    });
+  });
+}
+
+// Avatar management grid (bottom section)
+function loadAvatarGrid() {
+  fetch("/list-avatars").then(function(r){ return r.json(); }).then(function(list) {
+    var grid = document.getElementById("av-manage-grid");
+    grid.innerHTML = "";
+    list.forEach(function(av) {
+      var item = document.createElement("div");
+      item.className = "avatar-item";
+      item.innerHTML = '<img src="/avatar/' + av.file + '"><span>' + av.name + '</span><button class="del-av">удалить</button>';
+      item.querySelector(".del-av").addEventListener("click", function() {
+        if (!confirm("Удалить " + av.name + "?")) return;
+        fetch("/delete-avatar", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({file: av.file})})
+          .then(function(){ loadAvatarGrid(); loadAvatarPicker(); });
+      });
+      grid.appendChild(item);
+    });
+  });
+}
+
+loadAvatarPicker();
+loadAvatarGrid();
+</script>
 <div id="modal-overlay">
   <div id="modal-box">
     <p id="modal-msg"></p>
@@ -642,6 +755,33 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 print(f"Photo proxy error: {e}")
                 self.send_response(502); self.end_headers()
+            return
+
+        # ── GET /avatar/<file> — serve avatar image ───────────────────────────
+        if self.path.startswith("/avatar/"):
+            fname = os.path.basename(self.path[8:].split("?")[0])
+            fpath = os.path.join(AVATARS_DIR, fname)
+            if os.path.exists(fpath):
+                with open(fpath, "rb") as af:
+                    data = af.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/jpeg")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Cache-Control", "public, max-age=86400")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+            else:
+                self.send_response(404); self.end_headers()
+            return
+
+        # ── GET /list-avatars — return avatar list JSON ────────────────────────
+        if self.path == "/list-avatars":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(load_avatars(), ensure_ascii=False).encode())
             return
 
         # ── GET /post/{slug} — mini-app fetches post metadata ─────────────────
@@ -854,6 +994,44 @@ class Handler(BaseHTTPRequestHandler):
             ok = bool(res_edit and (res_edit.get("ok") or "not modified" in err))
             print(f"[repair] editMessageText slug={slug} msg={button_msg_id} ok={ok} resp={res_edit}")
             self.wfile.write(json.dumps({"ok": ok, "button_msg_id": button_msg_id, "tg": res_edit}).encode())
+            return
+
+        # ── Upload avatar ─────────────────────────────────────────────────────
+        if self.path == "/upload-avatar":
+            ct = self.headers.get("Content-Type", "")
+            fields, files = parse_multipart(body, ct)
+            name = fields.get("avatar_name", "").strip()
+            photo = files.get("avatar_photo")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            if not name or not photo:
+                self.wfile.write(json.dumps({"ok": False, "error": "name and photo required"}).encode())
+                return
+            import re as _re
+            safe = _re.sub(r'[^\w\-]', '_', name) + ".jpg"
+            with open(os.path.join(AVATARS_DIR, safe), "wb") as af:
+                af.write(photo)
+            avatars = load_avatars()
+            avatars = [a for a in avatars if a["file"] != safe]
+            avatars.append({"name": name, "file": safe})
+            save_avatars(avatars)
+            self.wfile.write(json.dumps({"ok": True, "file": safe}).encode())
+            return
+
+        # ── Delete avatar ─────────────────────────────────────────────────────
+        if self.path == "/delete-avatar":
+            d = json.loads(body)
+            fname = os.path.basename(d.get("file", ""))
+            avatars = [a for a in load_avatars() if a["file"] != fname]
+            save_avatars(avatars)
+            fpath = os.path.join(AVATARS_DIR, fname)
+            if os.path.exists(fpath):
+                os.remove(fpath)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True}).encode())
             return
 
         # ── Rating from mini-app ──────────────────────────────────────────────

@@ -459,8 +459,7 @@ ADMIN_FORM = """<!DOCTYPE html>
     <div class="dz-preview"><img id="dz-mini-img" src=""><div class="dz-name" id="dz-mini-name"></div></div>
   </div>
   <button type="button" class="dz-clear" id="dz-mini-clear">✕ Удалить файл</button>
-  <button type="button" class="avatar-picker-toggle" id="av-toggle">или выбрать из списка ↓</button>
-  <div class="avatar-grid" id="avatar-grid"></div>
+  <div class="avatar-grid open" id="avatar-grid"></div>
   <button type="submit" id="btn">Опубликовать</button>
   <p id="status" style="color:#0a0;font-weight:600;display:none">✅ Публикация запущена — пост появится в канале через несколько секунд</p>
 </form>
@@ -646,9 +645,6 @@ document.getElementById("av-upload-form").addEventListener("submit", function(e)
 });
 
 // Avatar picker (in publish form)
-document.getElementById("av-toggle").addEventListener("click", function() {
-  document.getElementById("avatar-grid").classList.toggle("open");
-});
 
 function loadAvatarPicker() {
   fetch("/list-avatars").then(function(r){ return r.json(); }).then(function(list) {

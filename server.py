@@ -1185,11 +1185,19 @@ class Handler(BaseHTTPRequestHandler):
         entry = SLUG_MAP.get(post_id) if isinstance(SLUG_MAP.get(post_id), dict) else None
 
         if action == "delete":
-            msg_to_delete = prev_id or (entry.get("comment_ids", {}).get(username) if entry else None)
-            if msg_to_delete:
-                tg("deleteMessage", {"chat_id": chat_id, "message_id": msg_to_delete})
+            # Delete both the client-known comment and the server-tracked one (may differ after stats reset)
+            ids_to_delete = set()
+            if prev_id:
+                ids_to_delete.add(int(prev_id))
+            if entry:
+                server_id = entry.get("comment_ids", {}).get(username)
+                if server_id:
+                    ids_to_delete.add(int(server_id))
+            for mid in ids_to_delete:
+                tg("deleteMessage", {"chat_id": chat_id, "message_id": mid})
             if entry:
                 entry.get("votes", {}).pop(username, None)
+                entry.get("scores_by_user", {}).pop(username, None)
                 entry.get("comment_ids", {}).pop(username, None)
                 save_slug_map(SLUG_MAP)
                 update_average(post_id)
@@ -1198,8 +1206,8 @@ class Handler(BaseHTTPRequestHandler):
 
         text = format_comment(data)
 
-        # Server-side deduplication: if user already has a comment, edit it
-        existing_comment_id = entry.get("comment_ids", {}).get(username) if entry else None
+        # Server-side deduplication: prefer server-tracked id, then client's prev_id
+        existing_comment_id = (entry.get("comment_ids", {}).get(username) if entry else None) or prev_id
         if existing_comment_id:
             res = tg("editMessageText", {
                 "chat_id":    chat_id,
@@ -1207,13 +1215,13 @@ class Handler(BaseHTTPRequestHandler):
                 "text":       text,
                 "parse_mode": "HTML",
             })
-        elif action == "update" and prev_id:
-            res = tg("editMessageText", {
-                "chat_id":    chat_id,
-                "message_id": prev_id,
-                "text":       text,
-                "parse_mode": "HTML",
-            })
+            # If edit failed (message deleted/not found), fall back to sending new
+            if not res or not res.get("ok"):
+                payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
+                if discussion_thread_id:
+                    payload["reply_to_message_id"]         = discussion_thread_id
+                    payload["allow_sending_without_reply"] = True
+                res = tg("sendMessage", payload)
         else:
             payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
             if discussion_thread_id:
